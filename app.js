@@ -7,8 +7,8 @@ app.get("/", (req, res) => {
 	res.sendFile("/test.html", { root: __dirname });
 });
 
-app.get("/render_sticky.js", (req, res) => {
-	res.sendFile("/render_sticky.js", { root: __dirname });
+app.get("/manual-render-ads.js", (req, res) => {
+	res.sendFile("/manual-render-ads.js", { root: __dirname });
 });
 
 app.listen(port, () => {
