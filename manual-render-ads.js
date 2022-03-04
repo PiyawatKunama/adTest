@@ -261,8 +261,8 @@ generateAds = async () => {
 
 if (typeof window.AFAdsScript === "undefined") {
 	window.AFAdsScript = true;
-	window.addEventListener("DOMContentLoaded", function () {
-		generateAds();
-	});
-	// generateAds();
+	// window.addEventListener("DOMContentLoaded", function () {
+	// 	generateAds();
+	// });
+	generateAds();
 }
