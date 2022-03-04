@@ -1,4 +1,9 @@
+window.addEventListener("DOMContentLoaded", function () {
+	alert(12);
+});
+
 generateAds = async () => {
+	var placedIds = {};
 	const AFelements = document.getElementsByClassName("AFbrother");
 	const webKey = AFelements[0].getAttribute("data-web-key");
 
@@ -26,12 +31,10 @@ generateAds = async () => {
 		redirect: "follow",
 	};
 	const response = await fetch(
-		"http://localhost:3001/creatives/render_ads",
+		"https://api.skuberg.xyz/creatives/render_ads",
 		requestOptions
 	);
 	const adsData = await response.json();
-	console.log(adsData);
-
 	const renderAdKeys = [];
 	for (let i = 0; i < adsData.length; i++) {
 		renderAdKeys.push(adsData[i].key);
@@ -52,15 +55,47 @@ generateAds = async () => {
 		divElem.id = `tagDiv${i}`;
 		if (adsData[i].ad_format === "BANNER") {
 			if (adsData[i].banner_format === "STICKY") {
-				divElem.style =
-					"display: block !important;width: 100% !important;bottom: 0px !important;margin: 0 !important;clear: none !important;float: none !important;padding: 0px !important;position: fixed !important;visibility: visible !important;z-index: 999999999 !important;text-align: center !important;";
+				divElem.style = `
+                  display: block !important;
+                  width: 100% !important;
+                  bottom: 0px !important;
+                  margin: 0 !important;
+                  clear: none !important;
+                  float: none !important;
+                  padding: 0px !important;
+                  position: fixed !important;
+                  visibility: visible !important;
+                  z-index: 999999999 !important;
+                  text-align: center !important;
+                  ${adStyle}`;
+
 				document.getElementById(`tagIns${i}`).appendChild(divElem);
 			} else if (adsData[i].banner_format === "HEADER") {
-				divElem.style = `display: block;margin: 0px;width: 100% !important;bottom: 0px;float: none !important;left: 0px;margin: 0px !important;max-height: none !important;max-width: none !important;opacity: 1;overflow: visible !important;text-align: center  !important;`;
-				document.body.insertBefore(divElem, document.body.firstChild);
+				divElem.style = `
+              display: block;
+              padding: 0;
+              width: 100% !important;
+              float: none !important;
+              left: 0px;
+              margin: 0px !important;
+              opacity: 1;
+              overflow: visible !important;
+              text-align: center  !important;`;
+				document.body.prepend(divElem);
+				// document.body.insertBefore(divElem, document.body.firstChild);
+				// document.body.appendChild(divElem);
 			} else if (adsData[i].banner_format === "SLIDE") {
+				const sticky_ads = adsData.filter(
+					(ads) => ads.banner_format === "STICKY"
+				);
+				const sticky_height = sticky_ads.map(
+					(sticky_ads) => sticky_ads.height
+				);
 				const parentNode = insElem.parentNode;
 				parentNode.style.position = "relative";
+				divElem.style = `display:inline-block;margin: 0 !important;clear: none !important;position: fixed;bottom: ${
+					sticky_height.length ? Math.max(...sticky_height) : 1
+				}px !important;right:1px;padding: 0px !important;z-index: 999999999 !important;`;
 				document.getElementById(`tagIns${i}`).appendChild(divElem);
 			} else {
 				document.getElementById(`tagIns${i}`).appendChild(divElem);
@@ -69,6 +104,36 @@ generateAds = async () => {
 		} else {
 			document.getElementById(`tagIns${i}`).appendChild(divElem);
 			adStyle = `display: inline-block;${adStyle}`;
+		}
+		if (adsData[i].ad_format === "NATIVE") {
+			// const box = document.createElement('div');
+			// box.style = `
+			//     background-color: rgba(0,0,0, 0.8);
+			//     width: ${adsData[i].width}px;
+			//     height: ${adsData[i].height / 3}px;
+			//     color: white;
+			//     transform: translate(0%, -100%);
+			//     z-index: 999999;
+			// `;
+			// divElem.style = `
+			//     display:flex;
+			//     flex-direction: column-reverse;
+			//     // height: 100%;
+			//     background-size: cover;
+			// `;
+			// const header = document.createElement('h1');
+			// header.style = 'margin: 0;padding: 15px 20px;font-size: 20px';
+			// header.innerHTML = adsData[i].type;
+			// const message = document.createElement('p');
+			// message.style = 'margin: 0;padding: 0 15px;font-size: 18px';
+			// message.innerHTML =
+			//     adsData[i].url.length >= 80
+			//         ? adsData[i].url.slice(0, 30) + '...'
+			//         : adsData[i].url;
+			// box.appendChild(header);
+			// box.appendChild(message);
+			// divElem.appendChild(box);
+			document.getElementById(`tagIns${i}`).appendChild(divElem);
 		}
 
 		if (adsData[i].ad_format === "POP") {
@@ -100,7 +165,9 @@ generateAds = async () => {
 		// div ads
 		const DivAdElem = document.createElement("div");
 		DivAdElem.id = `tagDivAd${i}`;
-		DivAdElem.style = "display: inline-block; position: relative";
+		DivAdElem.style = `display: inline-block; position: relative; ${adStyle}`;
+		// console.log(`display: inline-block; position: relative; ${adStyle}`);
+
 		document.getElementById(`tagA${i}`).appendChild(DivAdElem);
 
 		//Img
@@ -124,27 +191,78 @@ generateAds = async () => {
 		};
 
 		document.getElementById(`tagDivAd${i}`).appendChild(ImgClose);
-	}
-	renderAdKeys.forEach(async (renderAdKey) => {
-		const renderAdBody = JSON.stringify({
-			webKey,
-			adKey: renderAdKey,
-		});
-		const requestRenderAdOptions = {
-			method: "POST",
-			headers,
-			body: renderAdBody,
-			redirect: "follow",
+		placedIds[adsData[i].adKey] = {
+			div_id: divElem.id,
+			creativeCampaign_Key: adsData[i].key,
+			creativeWebsite_Key: adsData[i].adKey,
+			impressed: 0,
 		};
 
-		await fetch(
-			"http://localhost:3001/creatives/impression_ads",
-			requestRenderAdOptions
-		);
+		var data = JSON.stringify({
+			webKey: webKey,
+			adKey: adsData[i].key,
+			adWebKey: adsData[i].adKey,
+		});
+		if (isElementInViewport(divElem)) {
+			await impressedCreative(data);
+		}
+	}
+
+	async function impressedCreative(data) {
+		await fetch("https://api.skuberg.xyz/creatives/impression_ad", {
+			...requestOptions,
+			body: data,
+		});
+		return { success: true };
+	}
+
+	window.addEventListener("scroll", async function () {
+		for (var [key, value] of Object.entries(placedIds)) {
+			if (!value.impressed) {
+				var el = document.getElementById(value.div_id);
+				var webKey = el.getAttribute("data-web-key");
+
+				var data = JSON.stringify({
+					webKey: webKey,
+					adKey: value.creativeCampaign_Key,
+					adWebKey: value.creativeWebsite_Key,
+				});
+
+				if (isElementInViewport(el)) {
+					var res = await impressedCreative(data);
+					if (res.success) {
+						value.impressed = 1;
+					}
+				}
+			}
+		}
 	});
+
+	function isElementInViewport(el) {
+		// Special bonus for those using jQuery
+		if (typeof jQuery === "function" && el instanceof jQuery) {
+			el = el[0];
+		}
+		var rect = el.getBoundingClientRect();
+		return (
+			rect.top >= 0 &&
+			rect.left >= 0 &&
+			rect.bottom <=
+				(window.innerHeight ||
+					document.documentElement
+						.clientHeight) /* or $(window).height() */ &&
+			rect.right <=
+				(window.innerWidth ||
+					document.documentElement
+						.clientWidth) /* or $(window).width() */
+		);
+	}
 };
 
 if (typeof window.AFAdsScript === "undefined") {
 	window.AFAdsScript = true;
-	generateAds();
+	window.addEventListener("DOMContentLoaded", function () {
+		generateAds();
+	});
+	// generateAds();
 }
