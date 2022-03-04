@@ -31,7 +31,7 @@ generateAds = async () => {
 		redirect: "follow",
 	};
 	const response = await fetch(
-		"https://api.skuberg.xyz/creatives/render_ads",
+		"http://localhost:3001/creatives/render_ads",
 		requestOptions
 	);
 	const adsData = await response.json();
@@ -209,7 +209,7 @@ generateAds = async () => {
 	}
 
 	async function impressedCreative(data) {
-		await fetch("https://api.skuberg.xyz/creatives/impression_ad", {
+		await fetch("http://localhost:3001/creatives/impression_ad", {
 			...requestOptions,
 			body: data,
 		});
