@@ -11,6 +11,10 @@ app.get("/testServer", (req, res) => {
 	res.sendFile("/testServer.html", { root: __dirname });
 });
 
+app.get("/server", (req, res) => {
+	res.sendFile("/server.html", { root: __dirname });
+});
+
 app.get("/manual-render-ads.js", (req, res) => {
 	res.sendFile("/manual-render-ads.js", { root: __dirname });
 });
