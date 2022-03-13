@@ -1,7 +1,3 @@
-window.addEventListener("DOMContentLoaded", function () {
-	alert(12);
-});
-
 generateAds = async () => {
 	var placedIds = {};
 	const AFelements = document.getElementsByClassName("AFbrother");
@@ -16,7 +12,6 @@ generateAds = async () => {
 	}
 
 	const headers = new Headers();
-
 	headers.append("Access-Control-Allow-Origin", "*");
 	headers.append("Content-Type", "application/json");
 
@@ -24,194 +19,95 @@ generateAds = async () => {
 		webKey,
 		adKeys,
 	});
+
 	const requestOptions = {
 		method: "POST",
 		headers,
 		body,
 		redirect: "follow",
 	};
+
 	const response = await fetch(
 		"http://localhost:3001/creatives/render_ads",
 		requestOptions
 	);
 	const adsData = await response.json();
-	const renderAdKeys = [];
+
 	for (let i = 0; i < adsData.length; i++) {
-		renderAdKeys.push(adsData[i].key);
-		let adStyle;
-
-		renderAdKeys.push(adsData[i].key);
-		// Ins
-		const insElem = document.querySelector(
-			`ins[data-creative-web-key='${adsData[i].adKey}']`
-		);
-
-		insElem.id = `tagIns${i}`;
-
-		adStyle = insElem.getAttribute("style");
-
-		// div
-		const divElem = document.createElement("div");
-		divElem.id = `tagDiv${i}`;
-		if (adsData[i].ad_format === "BANNER") {
-			if (adsData[i].banner_format === "STICKY") {
-				divElem.style = `
-                  display: block !important;
-                  width: 100% !important;
-                  bottom: 0px !important;
-                  margin: 0 !important;
-                  clear: none !important;
-                  float: none !important;
-                  padding: 0px !important;
-                  position: fixed !important;
-                  visibility: visible !important;
-                  z-index: 999999999 !important;
-                  text-align: center !important;
-                  ${adStyle}`;
-
-				document.getElementById(`tagIns${i}`).appendChild(divElem);
-			} else if (adsData[i].banner_format === "HEADER") {
-				divElem.style = `
-              display: block;
-              padding: 0;
-              width: 100% !important;
-              float: none !important;
-              left: 0px;
-              margin: 0px !important;
-              opacity: 1;
-              overflow: visible !important;
-              text-align: center  !important;`;
-				document.body.prepend(divElem);
-				// document.body.insertBefore(divElem, document.body.firstChild);
-				// document.body.appendChild(divElem);
-			} else if (adsData[i].banner_format === "SLIDE") {
-				const sticky_ads = adsData.filter(
-					(ads) => ads.banner_format === "STICKY"
+		const adData = adsData[i];
+		const adIndex = i + 1;
+		switch (adData.ad_format) {
+			case "NATIVE":
+				RenderNative({
+					nativeIndex: adIndex,
+					urlSrc: adData.url,
+					urlHref: adData.href,
+					nativeAdTitle: adData.title,
+					nativeAdDescription: adData.description,
+					creativeWebKey: adData.adKey,
+				});
+				break;
+			case "POP":
+				RenderPop(adData, screen);
+				break;
+			case "BANNER":
+				// ins
+				const insElem = document.querySelector(
+					`ins[data-creative-web-key='${adData.adKey}']`
 				);
-				const sticky_height = sticky_ads.map(
-					(sticky_ads) => sticky_ads.height
-				);
-				const parentNode = insElem.parentNode;
-				parentNode.style.position = "relative";
-				divElem.style = `display:inline-block;margin: 0 !important;clear: none !important;position: fixed;bottom: ${
-					sticky_height.length ? Math.max(...sticky_height) : 1
-				}px !important;right:1px;padding: 0px !important;z-index: 999999999 !important;`;
-				document.getElementById(`tagIns${i}`).appendChild(divElem);
-			} else {
-				document.getElementById(`tagIns${i}`).appendChild(divElem);
-				adStyle = `display: inline-block;${adStyle}`;
-			}
-		} else {
-			document.getElementById(`tagIns${i}`).appendChild(divElem);
-			adStyle = `display: inline-block;${adStyle}`;
-		}
-		if (adsData[i].ad_format === "NATIVE") {
-			// const box = document.createElement('div');
-			// box.style = `
-			//     background-color: rgba(0,0,0, 0.8);
-			//     width: ${adsData[i].width}px;
-			//     height: ${adsData[i].height / 3}px;
-			//     color: white;
-			//     transform: translate(0%, -100%);
-			//     z-index: 999999;
-			// `;
-			// divElem.style = `
-			//     display:flex;
-			//     flex-direction: column-reverse;
-			//     // height: 100%;
-			//     background-size: cover;
-			// `;
-			// const header = document.createElement('h1');
-			// header.style = 'margin: 0;padding: 15px 20px;font-size: 20px';
-			// header.innerHTML = adsData[i].type;
-			// const message = document.createElement('p');
-			// message.style = 'margin: 0;padding: 0 15px;font-size: 18px';
-			// message.innerHTML =
-			//     adsData[i].url.length >= 80
-			//         ? adsData[i].url.slice(0, 30) + '...'
-			//         : adsData[i].url;
-			// box.appendChild(header);
-			// box.appendChild(message);
-			// divElem.appendChild(box);
-			document.getElementById(`tagIns${i}`).appendChild(divElem);
-		}
+				insElem.id = `tagIns${adIndex}`;
+				let adStyle = insElem.getAttribute("style");
 
-		if (adsData[i].ad_format === "POP") {
-			// Get session
-			let pop_up_session = sessionStorage.getItem("afbrother_pop");
-			if (!pop_up_session) {
-				var element = document.createElement("a");
-				element.id = "popup_ads";
-				element.setAttribute("href", adsData[i].url);
+				// main div
+				const divElem = document.createElement("div");
+				divElem.id = `tagDiv${adIndex}`;
 
-				window.open(element, "", "width=800 height=500");
+				switch (adData.banner_format) {
+					case "STICKY":
+						RenderSticky({ divElem, adStyle, adIndex });
+						break;
+					case "HEADER":
+						RenderHeader({ divElem });
+						break;
+					case "SLIDE":
+						RenderSlide({ adsData, insElem, divElem, adIndex });
+						break;
+					case "IN_PAGE":
+						document
+							.getElementById(`tagIns${adIndex}`)
+							.appendChild(divElem);
+						adStyle = `display: inline-block;${adStyle}`;
+						break;
+				}
+				generateBannerAdsDisplay({ adIndex, adData, adStyle });
 
-				// Set session after show pop up
-				sessionStorage.setItem("afbrother_pop", "pop_up_ads_session");
-			}
-			// Romove session after 30 minute
-			setTimeout(() => {
-				sessionStorage.removeItem("afbrother_pop");
-			}, 18000000);
-		}
+				placedIds[adData.adKey] = {
+					div_id: divElem.id,
+					creativeCampaign_Key: adData.key,
+					creativeWebsite_Key: adData.adKey,
+					impressed: 0,
+				};
 
-		// A
-		const AElem = document.createElement("a");
-		AElem.id = `tagA${i}`;
-		AElem.setAttribute("href", adsData[i].href);
-		AElem.target = "_blank";
-		document.getElementById(`tagDiv${i}`).appendChild(AElem);
+				var data = JSON.stringify({
+					webKey,
+					adKey: adData.key,
+					adWebKey: adData.adKey,
+				});
 
-		// div ads
-		const DivAdElem = document.createElement("div");
-		DivAdElem.id = `tagDivAd${i}`;
-		DivAdElem.style = `display: inline-block; position: relative; ${adStyle}`;
-		// console.log(`display: inline-block; position: relative; ${adStyle}`);
-
-		document.getElementById(`tagA${i}`).appendChild(DivAdElem);
-
-		//Img
-		const ImgElem = document.createElement("img");
-		ImgElem.style = adStyle;
-		ImgElem.src = adsData[i].url;
-		document.getElementById(`tagDivAd${i}`).appendChild(ImgElem);
-
-		//ImgClose
-		const ImgClose = document.createElement("img");
-		ImgClose.style =
-			"position: absolute; top: 0; right: 0; margin-top: 2px; margin-right: 2px;width: 20px; height: 20px;background-color: white;";
-		ImgClose.src =
-			"https://ad-project.s3.ap-southeast-1.amazonaws.com/app-image/renderAds/close.png";
-
-		ImgClose.onclick = function remove(event) {
-			const ins = document.getElementById(`tagIns${i}`);
-			const deleteDiv = document.getElementById(`tagDiv${i}`);
-			ins.removeChild(deleteDiv);
-			event.preventDefault();
-		};
-
-		document.getElementById(`tagDivAd${i}`).appendChild(ImgClose);
-		placedIds[adsData[i].adKey] = {
-			div_id: divElem.id,
-			creativeCampaign_Key: adsData[i].key,
-			creativeWebsite_Key: adsData[i].adKey,
-			impressed: 0,
-		};
-
-		var data = JSON.stringify({
-			webKey: webKey,
-			adKey: adsData[i].key,
-			adWebKey: adsData[i].adKey,
-		});
-		if (isElementInViewport(divElem)) {
-			await impressedCreative(data);
+				if (
+					isElementInViewport(divElem) ||
+					adsData[i].ad_format === "POP"
+				) {
+					await impressedCreative(data);
+				}
+				break;
 		}
 	}
 
-	async function impressedCreative(data) {
+	async function impressedCreative(body) {
 		await fetch("http://localhost:3001/creatives/impression_ad", {
 			...requestOptions,
-			body: data,
+			body,
 		});
 		return { success: true };
 	}
@@ -220,10 +116,9 @@ generateAds = async () => {
 		for (var [key, value] of Object.entries(placedIds)) {
 			if (!value.impressed) {
 				var el = document.getElementById(value.div_id);
-				var webKey = el.getAttribute("data-web-key");
 
 				var data = JSON.stringify({
-					webKey: webKey,
+					webKey,
 					adKey: value.creativeCampaign_Key,
 					adWebKey: value.creativeWebsite_Key,
 				});
@@ -259,10 +154,226 @@ generateAds = async () => {
 	}
 };
 
+generateBannerAdsDisplay = ({ adIndex, adData, adStyle }) => {
+	// A
+	const AElem = document.createElement("a");
+	AElem.id = `tagA${adIndex}`;
+	AElem.setAttribute("href", adData.href);
+	AElem.target = "_blank";
+	document.getElementById(`tagDiv${adIndex}`).appendChild(AElem);
+
+	//image
+	const DivAdElem = document.createElement("div");
+	DivAdElem.id = `tagDivAd${adIndex}`;
+	DivAdElem.style = "display: inline-block; position: relative";
+	document.getElementById(`tagA${adIndex}`).appendChild(DivAdElem);
+	const ImgElem = document.createElement("img");
+	ImgElem.style = adStyle;
+	ImgElem.src = adData.url;
+	document.getElementById(`tagDivAd${adIndex}`).appendChild(ImgElem);
+
+	//close ad
+	const ImgClose = document.createElement("img");
+	ImgClose.style =
+		"cursor:pointer;position: absolute; top: 0; left: 0; margin-top: 2px; margin-left: 2px;width: 20px; height: 20px;background-color: white;opacity: 0.1;";
+	ImgClose.src =
+		"https://ad-project.s3.ap-southeast-1.amazonaws.com/app-image/renderAds/close.png";
+
+	ImgClose.onclick = function remove(event) {
+		const ins = document.getElementById(`tagIns${adIndex}`);
+		const deleteDiv = document.getElementById(`tagDiv${adIndex}`);
+		ins.removeChild(deleteDiv);
+		event.preventDefault();
+	};
+	document.getElementById(`tagDivAd${adIndex}`).appendChild(ImgClose);
+};
+
+RenderSticky = ({ divElem, adStyle, adIndex }) => {
+	divElem.style = `
+					display: block !important;
+					width: 100% !important;
+					bottom: 0px !important;
+					margin: 0 !important;
+					clear: none !important;
+					float: none !important;
+					padding: 0px !important;
+					position: fixed !important;
+					visibility: visible !important;
+					z-index: 999999999 !important;
+					text-align: center !important;
+					${adStyle}`;
+
+	document.getElementById(`tagIns${adIndex}`).appendChild(divElem);
+};
+
+RenderHeader = ({ divElem }) => {
+	divElem.style = `
+	display: block;
+	padding: 0;
+	width: 100% !important;
+	float: none !important;
+	left: 0px;
+	margin: 0px !important;
+	opacity: 1;
+	overflow: visible !important;
+	text-align: center  !important;`;
+	document.body.prepend(divElem);
+	// document.body.insertBefore(divElem, document.body.firstChild);
+	// document.body.appendChild(divElem);
+};
+
+RenderSlide = ({ adsData, insElem, divElem, adIndex }) => {
+	const sticky_ads = adsData.filter((ads) => ads.banner_format === "STICKY");
+	const sticky_height = sticky_ads.map((sticky_ads) => sticky_ads.height);
+	const parentNode = insElem.parentNode;
+	parentNode.style.position = "relative";
+	divElem.style = `display:inline-block;margin: 0 !important;clear: none !important;position: fixed;bottom: ${
+		sticky_height.length ? Math.max(...sticky_height) : 1
+	}px !important;right:1px;padding: 0px !important;z-index: 999999999 !important;`;
+	document.getElementById(`tagIns${adIndex}`).appendChild(divElem);
+};
+
+RenderPop = ({ adData, screen }) => {
+	var element = document.createElement("a");
+	element.id = "popup_ads";
+	element.setAttribute("href", adsData[i].url);
+	window.open(element, "", `width=${screen.width} height=${screen.height}`);
+};
+
+RenderNative = ({
+	nativeIndex,
+	urlSrc,
+	urlHref,
+	nativeAdDescription,
+	nativeAdTitle,
+	creativeWebKey,
+}) => {
+	//ins
+	const insElem = document.querySelector(
+		`ins[data-creative-web-key=${creativeWebKey}]`
+	);
+	insElem.id = `tagIns${nativeIndex}`;
+	adStyle = insElem.getAttribute("style");
+	const sizesTypeText = adStyle.split(";");
+	const NativeAdWidth = sizesTypeText[0].replace(/[^0-9]/g, "");
+	const NativeAdHeight = sizesTypeText[1].replace(/[^0-9]/g, "");
+	insElem.style = `${adStyle};text-decoration: none;display: inline-block;`;
+
+	//ins div
+	const insDiv = document.createElement("div");
+	insDiv.id = `insDiv${nativeIndex}`;
+	insDiv.style = "position: relative;";
+	document.getElementById(`tagIns${nativeIndex}`).appendChild(insDiv);
+
+	// native main div
+	const MainNativeStyle = `position: absolute;border: 0.7px solid #d5d4eb;padding: calc(${NativeAdHeight}px / 20) calc(${NativeAdWidth}px / 20);width: calc(${NativeAdWidth}px - (${NativeAdWidth}px / 9.5));height: calc(${NativeAdHeight}px - (${NativeAdHeight}px / 9.5));`;
+	const AFNativeMainDiv = document.createElement("div");
+	AFNativeMainDiv.id = `AFNativeMainDiv${nativeIndex}`;
+	AFNativeMainDiv.style = MainNativeStyle;
+	AFNativeMainDiv.setAttribute("onmouseover", "onMouseOver()");
+	AFNativeMainDiv.setAttribute("onmouseout", "onMouseOut()");
+	AFNativeMainDiv.setAttribute("onclick", "onClick()");
+	document
+		.getElementById(`insDiv${nativeIndex}`)
+		.appendChild(AFNativeMainDiv);
+
+	//image form
+	const AFNativeImageForm = document.createElement("div");
+	AFNativeImageForm.style = `background-color: #f1f0f559;height: calc(${NativeAdHeight}px - (${NativeAdHeight}px / 2.6));width: 100%;position: relative;`;
+	AFNativeImageForm.id = `AFNativeImageForm${nativeIndex}`;
+	document
+		.getElementById(`AFNativeMainDiv${nativeIndex}`)
+		.appendChild(AFNativeImageForm);
+
+	//image
+	const AFNativeImage = document.createElement("img");
+	AFNativeImage.src = urlSrc;
+	AFNativeImage.alt = urlSrc;
+	AFNativeImage.style =
+		"height: auto;width: auto;max-height: 100%;max-width: 100%;margin: auto;position: absolute;left: 0;right: 0;top: 0;bottom: 0;";
+	document
+		.getElementById(`AFNativeImageForm${nativeIndex}`)
+		.appendChild(AFNativeImage);
+
+	//text
+	const AFNativeText = document.createElement("div");
+	AFNativeText.style = `font-family: Sans-serif;margin-top: calc(${NativeAdHeight}px / 30);padding: 0 calc(${NativeAdHeight}px / 28);`;
+	AFNativeText.id = `AFNativeText${nativeIndex}`;
+	document
+		.getElementById(`AFNativeMainDiv${nativeIndex}`)
+		.appendChild(AFNativeText);
+
+	//text title
+	const AFNativeTitle = document.createElement("div");
+	AFNativeTitle.style = `font-size: calc(((${NativeAdHeight}px / 19) + (${NativeAdWidth}px / 19)) / 2);font-weight: bold;`;
+	AFNativeTitle.id = `AFNativeTitle${nativeIndex}`;
+	document
+		.getElementById(`AFNativeText${nativeIndex}`)
+		.appendChild(AFNativeTitle);
+	if (nativeAdTitle.length > 31) {
+		document.getElementById(
+			`AFNativeTitle${nativeIndex}`
+		).innerHTML = `${nativeAdTitle.substring(0, 31)}..`;
+	} else {
+		document.getElementById(`AFNativeTitle${nativeIndex}`).innerHTML =
+			nativeAdTitle;
+	}
+
+	//text description
+	const AFNativeDescription = document.createElement("div");
+	AFNativeDescription.style = `font-size: calc(((${NativeAdHeight}px / 27.1428) + (${NativeAdWidth}px / 28.1428)) / 2)`;
+	AFNativeDescription.id = `AFNativeDescription${nativeIndex}`;
+	document
+		.getElementById(`AFNativeText${nativeIndex}`)
+		.appendChild(AFNativeDescription);
+
+	if (nativeAdDescription.length > 130) {
+		document.getElementById(
+			`AFNativeDescription${nativeIndex}`
+		).innerHTML = `${nativeAdDescription.substring(
+			0,
+			130
+		)} <span style='color: blue;text-decoration: underline;'> More info....</span>`;
+	} else {
+		document.getElementById(
+			`AFNativeDescription${nativeIndex}`
+		).innerHTML = `${nativeAdDescription} <span style='color: blue;text-decoration: underline;'> More info....</span>`;
+	}
+
+	//close ad
+	const ImgClose = document.createElement("img");
+	ImgClose.style =
+		"cursor:pointer;position: absolute; top: 0; left: 0; margin-top: 2px; margin-left: 2px;width: 20px; height: 20px;background-color: white;opacity: 0.1;";
+	ImgClose.src =
+		"https://ad-project.s3.ap-southeast-1.amazonaws.com/app-image/renderAds/close.png";
+
+	ImgClose.onclick = function remove(event) {
+		const ins = document.getElementById(`tagIns${nativeIndex}`);
+		const deleteDiv = document.getElementById(`insDiv${nativeIndex}`);
+		ins.removeChild(deleteDiv);
+		event.preventDefault();
+	};
+
+	document.getElementById(`insDiv${nativeIndex}`).appendChild(ImgClose);
+
+	onMouseOver = () => {
+		document.getElementById(
+			`AFNativeMainDiv${nativeIndex}`
+		).style = `${MainNativeStyle}cursor:pointer;border: 1px solid #d5d4eb;box-shadow: rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px,rgba(0, 0, 0, 0.09) 0px -3px 5px;`;
+	};
+	onMouseOut = () => {
+		document.getElementById(`AFNativeMainDiv${nativeIndex}`).style =
+			MainNativeStyle;
+	};
+	onClick = () => {
+		window.open(urlHref);
+	};
+};
+
 if (typeof window.AFAdsScript === "undefined") {
 	window.AFAdsScript = true;
 	// window.addEventListener("DOMContentLoaded", function () {
-	// 	generateAds();
+	//   generateAds();
 	// });
 	generateAds();
 }
