@@ -32,36 +32,47 @@ generateAds = async () => {
 		requestOptions
 	);
 	const adsData = await response.json();
-
 	for (let i = 0; i < adsData.length; i++) {
 		const adData = adsData[i];
+
 		const adIndex = i + 1;
+		let elementInViewport;
+
 		switch (adData.ad_format) {
 			case "NATIVE":
-				RenderNative({
+				elementInViewport = RenderNative({
 					nativeIndex: adIndex,
 					urlSrc: adData.url,
 					urlHref: adData.href,
 					nativeAdTitle: adData.title,
 					nativeAdDescription: adData.description,
-					creativeWebKey: adData.adKey,
+					adData,
 				});
+
+				placedIds[adData.adKey] = {
+					div_id: elementInViewport.id,
+					creativeCampaign_Key: adData.key,
+					creativeWebsite_Key: adData.adKey,
+					impressed: 0,
+				};
+
 				break;
 			case "POP":
-				RenderPop(adData, screen);
+				RenderPop(adData.url);
 				break;
 			case "BANNER":
 				// ins
 				const insElem = document.querySelector(
 					`ins[data-creative-web-key='${adData.adKey}']`
 				);
+				elementInViewport = insElem;
+
 				insElem.id = `tagIns${adIndex}`;
 				let adStyle = insElem.getAttribute("style");
 
 				// main div
 				const divElem = document.createElement("div");
 				divElem.id = `tagDiv${adIndex}`;
-
 				switch (adData.banner_format) {
 					case "STICKY":
 						RenderSticky({ divElem, adStyle, adIndex });
@@ -80,77 +91,104 @@ generateAds = async () => {
 						break;
 				}
 				generateBannerAdsDisplay({ adIndex, adData, adStyle });
-
 				placedIds[adData.adKey] = {
 					div_id: divElem.id,
 					creativeCampaign_Key: adData.key,
 					creativeWebsite_Key: adData.adKey,
 					impressed: 0,
 				};
-
-				var data = JSON.stringify({
-					webKey,
-					adKey: adData.key,
-					adWebKey: adData.adKey,
-				});
-
-				if (
-					isElementInViewport(divElem) ||
-					adsData[i].ad_format === "POP"
-				) {
-					await impressedCreative(data);
-				}
 				break;
 		}
-	}
 
-	async function impressedCreative(body) {
-		await fetch("http://localhost:3001/creatives/impression_ad", {
-			...requestOptions,
-			body,
+		var data = JSON.stringify({
+			webKey,
+			adKey: adData.key,
+			adWebKey: adData.adKey,
 		});
-		return { success: true };
-	}
 
-	window.addEventListener("scroll", async function () {
-		for (var [key, value] of Object.entries(placedIds)) {
-			if (!value.impressed) {
-				var el = document.getElementById(value.div_id);
+		window[`AFAdData${adData.adKey}`] = data;
 
-				var data = JSON.stringify({
-					webKey,
-					adKey: value.creativeCampaign_Key,
-					adWebKey: value.creativeWebsite_Key,
+		if (
+			adData.ad_format === "NATIVE" ||
+			(adData.ad_format === "BANNER" &&
+				adData.banner_format === "IN_PAGE")
+		) {
+			if (await isElementInViewport(elementInViewport)) {
+				await impressedCreative(data);
+			}
+		} else {
+			await impressedCreative(data);
+		}
+
+		async function impressedCreative(body) {
+			if (body) {
+				await fetch("http://localhost:3001/creatives/impression_ad", {
+					...requestOptions,
+					body,
 				});
 
-				if (isElementInViewport(el)) {
-					var res = await impressedCreative(data);
-					if (res.success) {
-						value.impressed = 1;
+				return { success: true };
+			}
+		}
+
+		window.addEventListener("scroll", async function () {
+			for (var [key, value] of Object.entries(placedIds)) {
+				if (!value.impressed) {
+					var el = document.getElementById(value.div_id);
+					if (await isElementInViewport(el)) {
+						var res = await impressedCreative(
+							window[
+								`AFAdData${el.getAttribute(
+									"data-creative-web-key"
+								)}`
+							]
+						);
+						if (res) {
+							if (res.success) {
+								value.impressed = 1;
+							}
+						}
 					}
 				}
 			}
-		}
-	});
+		});
 
-	function isElementInViewport(el) {
-		// Special bonus for those using jQuery
-		if (typeof jQuery === "function" && el instanceof jQuery) {
-			el = el[0];
+		async function isElementInViewport(el) {
+			// Special bonus for those using jQuery
+			if (typeof jQuery === "function" && el instanceof jQuery) {
+				el = el[0];
+			}
+
+			var rect = await el.getBoundingClientRect();
+
+			if (
+				typeof (await window[
+					`impressedInPage${el.getAttribute("id")}`
+				]) === "undefined"
+			) {
+				if (
+					rect.top >= 0 &&
+					rect.left >= 0 &&
+					rect.bottom <=
+						(window.innerHeight ||
+							document.documentElement
+								.clientHeight) /* or $(window).height() */ &&
+					rect.right <=
+						(window.innerWidth ||
+							document.documentElement
+								.clientWidth) /* or $(window).width() */
+				) {
+					window[`impressedInPage${adIndex}`] = true;
+					console.log(el);
+
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				return false;
+			}
 		}
-		var rect = el.getBoundingClientRect();
-		return (
-			rect.top >= 0 &&
-			rect.left >= 0 &&
-			rect.bottom <=
-				(window.innerHeight ||
-					document.documentElement
-						.clientHeight) /* or $(window).height() */ &&
-			rect.right <=
-				(window.innerWidth ||
-					document.documentElement
-						.clientWidth) /* or $(window).width() */
-		);
 	}
 };
 
@@ -233,10 +271,10 @@ RenderSlide = ({ adsData, insElem, divElem, adIndex }) => {
 	document.getElementById(`tagIns${adIndex}`).appendChild(divElem);
 };
 
-RenderPop = ({ adData, screen }) => {
+RenderPop = (url) => {
 	var element = document.createElement("a");
 	element.id = "popup_ads";
-	element.setAttribute("href", adsData[i].url);
+	element.setAttribute("href", url);
 	window.open(element, "", `width=${screen.width} height=${screen.height}`);
 };
 
@@ -246,11 +284,11 @@ RenderNative = ({
 	urlHref,
 	nativeAdDescription,
 	nativeAdTitle,
-	creativeWebKey,
+	adData,
 }) => {
 	//ins
 	const insElem = document.querySelector(
-		`ins[data-creative-web-key=${creativeWebKey}]`
+		`ins[data-creative-web-key='${adData.adKey}']`
 	);
 	insElem.id = `tagIns${nativeIndex}`;
 	adStyle = insElem.getAttribute("style");
@@ -266,7 +304,7 @@ RenderNative = ({
 	document.getElementById(`tagIns${nativeIndex}`).appendChild(insDiv);
 
 	// native main div
-	const MainNativeStyle = `position: absolute;border: 0.7px solid #d5d4eb;padding: calc(${NativeAdHeight}px / 20) calc(${NativeAdWidth}px / 20);width: calc(${NativeAdWidth}px - (${NativeAdWidth}px / 9.5));height: calc(${NativeAdHeight}px - (${NativeAdHeight}px / 9.5));`;
+	const MainNativeStyle = `border: 0.7px solid #d5d4eb;padding: calc(${NativeAdHeight}px / 20) calc(${NativeAdWidth}px / 20);width: calc(${NativeAdWidth}px - (${NativeAdWidth}px / 9.5));height: calc(${NativeAdHeight}px - (${NativeAdHeight}px / 9.5));`;
 	const AFNativeMainDiv = document.createElement("div");
 	AFNativeMainDiv.id = `AFNativeMainDiv${nativeIndex}`;
 	AFNativeMainDiv.style = MainNativeStyle;
@@ -368,6 +406,7 @@ RenderNative = ({
 	onClick = () => {
 		window.open(urlHref);
 	};
+	return insElem;
 };
 
 if (typeof window.AFAdsScript === "undefined") {
