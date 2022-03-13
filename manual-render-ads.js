@@ -179,7 +179,6 @@ generateAds = async () => {
 								.clientWidth) /* or $(window).width() */
 				) {
 					window[`impressedInPage${adIndex}`] = true;
-					console.log(el);
 
 					return true;
 				} else {
@@ -308,8 +307,14 @@ RenderNative = ({
 	const AFNativeMainDiv = document.createElement("div");
 	AFNativeMainDiv.id = `AFNativeMainDiv${nativeIndex}`;
 	AFNativeMainDiv.style = MainNativeStyle;
-	AFNativeMainDiv.setAttribute("onmouseover", "onMouseOver()");
-	AFNativeMainDiv.setAttribute("onmouseout", "onMouseOut()");
+	AFNativeMainDiv.setAttribute(
+		"onmouseover",
+		`onMouseOver("${nativeIndex}","${MainNativeStyle}")`
+	);
+	AFNativeMainDiv.setAttribute(
+		"onmouseout",
+		`onMouseOut("${nativeIndex}","${MainNativeStyle}")`
+	);
 	AFNativeMainDiv.setAttribute("onclick", "onClick()");
 	document
 		.getElementById(`insDiv${nativeIndex}`)
@@ -394,14 +399,13 @@ RenderNative = ({
 
 	document.getElementById(`insDiv${nativeIndex}`).appendChild(ImgClose);
 
-	onMouseOver = () => {
+	onMouseOver = (index, style) => {
 		document.getElementById(
-			`AFNativeMainDiv${nativeIndex}`
-		).style = `${MainNativeStyle}cursor:pointer;border: 1px solid #d5d4eb;box-shadow: rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px,rgba(0, 0, 0, 0.09) 0px -3px 5px;`;
+			`AFNativeMainDiv${index}`
+		).style = `${style}cursor:pointer;border: 1px solid #d5d4eb;box-shadow: rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px,rgba(0, 0, 0, 0.09) 0px -3px 5px;`;
 	};
-	onMouseOut = () => {
-		document.getElementById(`AFNativeMainDiv${nativeIndex}`).style =
-			MainNativeStyle;
+	onMouseOut = (index, style) => {
+		document.getElementById(`AFNativeMainDiv${index}`).style = style;
 	};
 	onClick = () => {
 		window.open(urlHref);
