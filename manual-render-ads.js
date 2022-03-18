@@ -1,8 +1,47 @@
+var renderAdsUrl = "http://localhost:3001/creatives/render_ads";
+var impressAdUrl = "http://localhost:3001/creatives/impression_ad";
+var closeImageUrl = "http://localhost:3001/api/serverImage/close.png";
+
+var adsInView = {};
+var adsData = {};
+var impressionCount = 0;
+
+function getViewPortSize() {
+	var viewportwidth;
+	var viewportheight;
+
+	//Standards compliant browsers (mozilla/netscape/opera/IE7)
+	if (typeof window.innerWidth != "undefined") {
+		(viewportwidth = window.innerWidth),
+			(viewportheight = window.innerHeight);
+	}
+
+	// IE6
+	else if (
+		typeof document.documentElement != "undefined" &&
+		typeof document.documentElement.clientWidth != "undefined" &&
+		document.documentElement.clientWidth != 0
+	) {
+		(viewportwidth = document.documentElement.clientWidth),
+			(viewportheight = document.documentElement.clientHeight);
+	}
+
+	//Older IE
+	else {
+		(viewportwidth = document.getElementsByTagName("body")[0].clientWidth),
+			(viewportheight =
+				document.getElementsByTagName("body")[0].clientHeight);
+	}
+
+	return { width: viewportwidth, height: viewportheight };
+}
+
 generateAds = async () => {
 	var placedIds = {};
-	const AFelements = document.getElementsByClassName("AFbrother");
-	const webKey = AFelements[0].getAttribute("data-web-key");
 
+	const AFelements = document.getElementsByClassName("AFbrother");
+
+	const webKey = AFelements[0].getAttribute("data-web-key");
 	const adKeys = [];
 	for (let i = 0; i < AFelements.length; i++) {
 		const adKey = AFelements[i].getAttribute("data-creative-web-key");
@@ -14,6 +53,7 @@ generateAds = async () => {
 	const headers = new Headers();
 	headers.append("Access-Control-Allow-Origin", "*");
 	headers.append("Content-Type", "application/json");
+	headers.append("Pragma", "no-store, no-cache");
 
 	const body = JSON.stringify({
 		webKey,
@@ -27,34 +67,32 @@ generateAds = async () => {
 		redirect: "follow",
 	};
 
-	const response = await fetch(
-		"http://localhost:3001/creatives/render_ads",
-		requestOptions
-	);
-	const adsData = await response.json();
-	for (let i = 0; i < adsData.length; i++) {
-		const adData = adsData[i];
+	const response = await fetch(renderAdsUrl, requestOptions);
+	const resAdsData = await response.json();
+	for (let i = 0; i < resAdsData.length; i++) {
+		const adData = resAdsData[i];
 
 		const adIndex = i + 1;
 		let elementInViewport;
-
+		let insElem;
 		switch (adData.ad_format) {
 			case "NATIVE":
+				//ins
+				insElem = document.querySelector(
+					`ins[data-creative-web-key='${adData.adKey}']`
+				);
+				insElem.id = `tagIns${adIndex}`;
+
 				elementInViewport = RenderNative({
+					insElem,
 					nativeIndex: adIndex,
 					urlSrc: adData.url,
 					urlHref: adData.href,
 					nativeAdTitle: adData.title,
 					nativeAdDescription: adData.description,
 					adData,
+					placedIds,
 				});
-
-				placedIds[adData.adKey] = {
-					div_id: elementInViewport.id,
-					creativeCampaign_Key: adData.key,
-					creativeWebsite_Key: adData.adKey,
-					impressed: 0,
-				};
 
 				break;
 			case "POP":
@@ -62,40 +100,46 @@ generateAds = async () => {
 				break;
 			case "BANNER":
 				// ins
-				const insElem = document.querySelector(
+				insElem = document.querySelector(
 					`ins[data-creative-web-key='${adData.adKey}']`
 				);
-				elementInViewport = insElem;
 
+				elementInViewport = insElem;
 				insElem.id = `tagIns${adIndex}`;
 				let adStyle = insElem.getAttribute("style");
+
+				insElem.style = "display: inline-block !important";
 
 				// main div
 				const divElem = document.createElement("div");
 				divElem.id = `tagDiv${adIndex}`;
+				divElem.style = "display: inline-block !important";
 				switch (adData.banner_format) {
 					case "STICKY":
-						RenderSticky({ divElem, adStyle, adIndex });
+						document.body.append(insElem);
+						RenderSticky(divElem, adStyle, adIndex);
 						break;
 					case "HEADER":
-						RenderHeader({ divElem });
+						document.body.style =
+							"margin-top: 0 !important;padding-top: 0 !important";
+						document.body.prepend(insElem);
+						RenderHeader(divElem, adIndex);
 						break;
 					case "SLIDE":
-						RenderSlide({ adsData, insElem, divElem, adIndex });
+						RenderSlide(adData, insElem, divElem, adIndex);
 						break;
 					case "IN_PAGE":
 						document
 							.getElementById(`tagIns${adIndex}`)
 							.appendChild(divElem);
-						adStyle = `display: inline-block;${adStyle}`;
+						adStyle = `display: inline-block !important;${adStyle}`;
 						break;
 				}
-				generateBannerAdsDisplay({ adIndex, adData, adStyle });
+				generateBannerAdsDisplay(adIndex, adData, adStyle);
 				placedIds[adData.adKey] = {
-					div_id: divElem.id,
+					insElem,
 					creativeCampaign_Key: adData.key,
 					creativeWebsite_Key: adData.adKey,
-					impressed: 0,
 				};
 				break;
 		}
@@ -106,94 +150,99 @@ generateAds = async () => {
 			adWebKey: adData.adKey,
 		});
 
-		window[`AFAdData${adData.adKey}`] = data;
+		adsData[adData.adKey] = data;
 
 		if (
 			adData.ad_format === "NATIVE" ||
 			(adData.ad_format === "BANNER" &&
 				adData.banner_format === "IN_PAGE")
 		) {
-			if (await isElementInViewport(elementInViewport)) {
-				await impressedCreative(data);
+			const inView = await isElementInViewport(elementInViewport);
+
+			if (inView) {
+				adsInView[insElem.getAttribute("id")] = new Date();
+				await checkTimeOnScreen(impressionCreative, insElem);
 			}
+		} else if (adData.ad_format === "POP") {
+			await impressionCreative(data, insElem);
 		} else {
-			await impressedCreative(data);
+			setTimeout(async function () {
+				await impressionCreative(data, insElem);
+			}, 5000);
 		}
 
-		async function impressedCreative(body) {
+		async function impressionCreative(body, insElem) {
 			if (body) {
-				await fetch("http://localhost:3001/creatives/impression_ad", {
+				await fetch(impressAdUrl, {
 					...requestOptions,
 					body,
 				});
-
+				window[`windowImEl${insElem.getAttribute("id")}`] = true;
+				impressionCount += 1;
+				console.log("testBody", body);
+				console.log("testImCount", impressionCount);
 				return { success: true };
 			}
 		}
 
 		window.addEventListener("scroll", async function () {
 			for (var [key, value] of Object.entries(placedIds)) {
-				if (!value.impressed) {
-					var el = document.getElementById(value.div_id);
-					if (await isElementInViewport(el)) {
-						var res = await impressedCreative(
-							window[
-								`AFAdData${el.getAttribute(
-									"data-creative-web-key"
-								)}`
-							]
-						);
-						if (res) {
-							if (res.success) {
-								value.impressed = 1;
-							}
+				var insElem = value.insElem;
+				const windowImEl =
+					window[`windowImEl${insElem.getAttribute("id")}`];
+
+				const inViewTime = adsInView[insElem.getAttribute("id")];
+
+				if (!windowImEl) {
+					const isOnScreen = await isElementInViewport(insElem);
+					if (isOnScreen) {
+						if (!inViewTime) {
+							adsInView[insElem.getAttribute("id")] = new Date();
+
+							await checkTimeOnScreen(
+								impressionCreative,
+								insElem
+							);
+						}
+					} else {
+						if (inViewTime) {
+							adsInView[insElem.getAttribute("id")] = null;
 						}
 					}
 				}
 			}
 		});
 
-		async function isElementInViewport(el) {
+		async function isElementInViewport(insElem) {
 			// Special bonus for those using jQuery
-			if (typeof jQuery === "function" && el instanceof jQuery) {
-				el = el[0];
+			if (typeof jQuery === "function" && insElem instanceof jQuery) {
+				insElem = insElem[0];
 			}
 
-			var rect = await el.getBoundingClientRect();
+			var rect = await insElem.getBoundingClientRect();
+			const adHeight =
+				window.innerHeight || document.documentElement.clientHeight;
+			/* or $(window).height() */
 
-			if (
-				typeof (await window[
-					`impressedInPage${el.getAttribute("id")}`
-				]) === "undefined"
-			) {
-				if (
-					rect.top >= 0 &&
-					rect.left >= 0 &&
-					rect.bottom <=
-						(window.innerHeight ||
-							document.documentElement
-								.clientHeight) /* or $(window).height() */ &&
-					rect.right <=
-						(window.innerWidth ||
-							document.documentElement
-								.clientWidth) /* or $(window).width() */
-				) {
-					window[`impressedInPage${adIndex}`] = true;
+			const adWidth =
+				window.innerWidth || document.documentElement.clientWidth;
+			/* or $(window).width() */
 
-					return true;
-				} else {
-					return false;
-				}
-			} else {
-				return false;
-			}
+			const isInView =
+				rect.top >= 0 &&
+				rect.left >= 0 &&
+				rect.bottom <= adHeight &&
+				rect.right <= adWidth;
+
+			return isInView;
 		}
 	}
 };
 
-generateBannerAdsDisplay = ({ adIndex, adData, adStyle }) => {
+generateBannerAdsDisplay = (adIndex, adData, adStyle) => {
 	// A
 	const AElem = document.createElement("a");
+	AElem.style = "display: inline-block !important";
 	AElem.id = `tagA${adIndex}`;
 	AElem.setAttribute("href", adData.href);
 	AElem.target = "_blank";
@@ -202,7 +251,7 @@ generateBannerAdsDisplay = ({ adIndex, adData, adStyle }) => {
 	//image
 	const DivAdElem = document.createElement("div");
 	DivAdElem.id = `tagDivAd${adIndex}`;
-	DivAdElem.style = "display: inline-block; position: relative";
+	DivAdElem.style = `display: inline-block !important;position: relative !important;${adStyle}`;
 	document.getElementById(`tagA${adIndex}`).appendChild(DivAdElem);
 	const ImgElem = document.createElement("img");
 	ImgElem.style = adStyle;
@@ -212,61 +261,59 @@ generateBannerAdsDisplay = ({ adIndex, adData, adStyle }) => {
 	//close ad
 	const ImgClose = document.createElement("img");
 	ImgClose.style =
-		"cursor:pointer;position: absolute; top: 0; left: 0; margin-top: 2px; margin-left: 2px;width: 20px; height: 20px;background-color: white;opacity: 0.1;";
-	ImgClose.src =
-		"https://ad-project.s3.ap-southeast-1.amazonaws.com/app-image/renderAds/close.png";
+		"cursor: pointer;position: absolute !important;top: 0 !important;left: 0 !important;margin-top: 2px !important;margin-left: 2px !important;width: 20px !important;height: 20px !important;background-color: white !important;opacity: 0.1 !important";
+	ImgClose.src = closeImageUrl;
 
 	ImgClose.onclick = function remove(event) {
-		const ins = document.getElementById(`tagIns${adIndex}`);
-		const deleteDiv = document.getElementById(`tagDiv${adIndex}`);
-		ins.removeChild(deleteDiv);
+		document.getElementById(`tagIns${adIndex}`).remove();
 		event.preventDefault();
 	};
+
 	document.getElementById(`tagDivAd${adIndex}`).appendChild(ImgClose);
 };
 
-RenderSticky = ({ divElem, adStyle, adIndex }) => {
-	divElem.style = `
-					display: block !important;
-					width: 100% !important;
-					bottom: 0px !important;
-					margin: 0 !important;
-					clear: none !important;
-					float: none !important;
-					padding: 0px !important;
-					position: fixed !important;
-					visibility: visible !important;
-					z-index: 999999999 !important;
-					text-align: center !important;
-					${adStyle}`;
+checkTimeOnScreen = (impressionCreative, insElem) => {
+	setTimeout(async function () {
+		const inTime = adsInView[insElem.getAttribute("id")];
 
+		if (inTime) {
+			const outTime = new Date();
+			if (outTime - inTime > 5000) {
+				await impressionCreative(
+					adsData[insElem.getAttribute("data-creative-web-key")],
+					insElem
+				);
+			}
+		}
+	}, 5100);
+};
+
+RenderSticky = (divElem, adStyle, adIndex) => {
+	divElem.style = `display: block !important;bottom: 0px !important;margin: 0 !important;clear: none !important;float: none !important;padding: 0px !important;position: fixed !important;visibility: visible !important;z-index: 999999999 !important;text-align: center !important;${adStyle}`;
 	document.getElementById(`tagIns${adIndex}`).appendChild(divElem);
 };
 
-RenderHeader = ({ divElem }) => {
+RenderHeader = (divElem, adIndex) => {
 	divElem.style = `
-	display: block;
-	padding: 0;
+	display: block !important;
+	padding: 0 !important;
 	width: 100% !important;
 	float: none !important;
-	left: 0px;
+	left: 0px !important;
 	margin: 0px !important;
-	opacity: 1;
+	opacity: 1 !important;
 	overflow: visible !important;
-	text-align: center  !important;`;
-	document.body.prepend(divElem);
+	text-align: center  !important`;
+	document.getElementById(`tagIns${adIndex}`).appendChild(divElem);
+
 	// document.body.insertBefore(divElem, document.body.firstChild);
 	// document.body.appendChild(divElem);
 };
 
-RenderSlide = ({ adsData, insElem, divElem, adIndex }) => {
-	const sticky_ads = adsData.filter((ads) => ads.banner_format === "STICKY");
-	const sticky_height = sticky_ads.map((sticky_ads) => sticky_ads.height);
+RenderSlide = (sticky_ad, insElem, divElem, adIndex) => {
 	const parentNode = insElem.parentNode;
 	parentNode.style.position = "relative";
-	divElem.style = `display:inline-block;margin: 0 !important;clear: none !important;position: fixed;bottom: ${
-		sticky_height.length ? Math.max(...sticky_height) : 1
-	}px !important;right:1px;padding: 0px !important;z-index: 999999999 !important;`;
+	divElem.style = `display: inline-block !important;margin: 0 !important;clear: none !important;position: fixed !important;bottom: ${sticky_ad.height}px !important;right:1px !important;padding: 0px !important;z-index: 999999999 !important`;
 	document.getElementById(`tagIns${adIndex}`).appendChild(divElem);
 };
 
@@ -278,32 +325,41 @@ RenderPop = (url) => {
 };
 
 RenderNative = ({
+	insElem,
 	nativeIndex,
 	urlSrc,
 	urlHref,
 	nativeAdDescription,
 	nativeAdTitle,
 	adData,
+	placedIds,
 }) => {
-	//ins
-	const insElem = document.querySelector(
-		`ins[data-creative-web-key='${adData.adKey}']`
-	);
-	insElem.id = `tagIns${nativeIndex}`;
+	placedIds[adData.adKey] = {
+		insElem,
+		creativeCampaign_Key: adData.key,
+		creativeWebsite_Key: adData.adKey,
+	};
+
 	adStyle = insElem.getAttribute("style");
 	const sizesTypeText = adStyle.split(";");
 	const NativeAdWidth = sizesTypeText[0].replace(/[^0-9]/g, "");
 	const NativeAdHeight = sizesTypeText[1].replace(/[^0-9]/g, "");
-	insElem.style = `${adStyle};text-decoration: none;display: inline-block;`;
+	insElem.style = `${adStyle};text-decoration: none !important;display: inline-block !important`;
 
 	//ins div
 	const insDiv = document.createElement("div");
 	insDiv.id = `insDiv${nativeIndex}`;
-	insDiv.style = "position: relative;";
+	insDiv.style = "position: relative !important";
 	document.getElementById(`tagIns${nativeIndex}`).appendChild(insDiv);
 
 	// native main div
-	const MainNativeStyle = `border: 0.7px solid #d5d4eb;padding: calc(${NativeAdHeight}px / 20) calc(${NativeAdWidth}px / 20);width: calc(${NativeAdWidth}px - (${NativeAdWidth}px / 9.5));height: calc(${NativeAdHeight}px - (${NativeAdHeight}px / 9.5));`;
+	const MainNativeStyle = `-webkit-box-sizing: unset !important;box-sizing: unset !important;line-height: normal !important;border: 0.7px solid #d5d4eb !important;padding: ${
+		NativeAdHeight / 20
+	}px ${NativeAdWidth / 20}px !important;width: ${
+		NativeAdWidth - NativeAdWidth / 9.5
+	}px !important;height: ${
+		NativeAdHeight - NativeAdHeight / 9.5
+	}px !important`;
 	const AFNativeMainDiv = document.createElement("div");
 	AFNativeMainDiv.id = `AFNativeMainDiv${nativeIndex}`;
 	AFNativeMainDiv.style = MainNativeStyle;
@@ -322,7 +378,9 @@ RenderNative = ({
 
 	//image form
 	const AFNativeImageForm = document.createElement("div");
-	AFNativeImageForm.style = `background-color: #f1f0f559;height: calc(${NativeAdHeight}px - (${NativeAdHeight}px / 2.6));width: 100%;position: relative;`;
+	AFNativeImageForm.style = `background-color: #f1f0f559 !important;height: ${
+		NativeAdHeight - NativeAdHeight / 2.6
+	}px !important;width: 100% !important;position: relative !important`;
 	AFNativeImageForm.id = `AFNativeImageForm${nativeIndex}`;
 	document
 		.getElementById(`AFNativeMainDiv${nativeIndex}`)
@@ -333,14 +391,16 @@ RenderNative = ({
 	AFNativeImage.src = urlSrc;
 	AFNativeImage.alt = urlSrc;
 	AFNativeImage.style =
-		"height: auto;width: auto;max-height: 100%;max-width: 100%;margin: auto;position: absolute;left: 0;right: 0;top: 0;bottom: 0;";
+		"height: auto !important;width: auto !important;max-height: 100% !important;max-width: 100% !important;margin: auto !important;position: absolute !important;left: 0 !important;right: 0 !important;top: 0 !important;bottom: 0 !important";
 	document
 		.getElementById(`AFNativeImageForm${nativeIndex}`)
 		.appendChild(AFNativeImage);
 
 	//text
 	const AFNativeText = document.createElement("div");
-	AFNativeText.style = `font-family: Sans-serif;margin-top: calc(${NativeAdHeight}px / 30);padding: 0 calc(${NativeAdHeight}px / 28);`;
+	AFNativeText.style = `font-family: Sans-serif !important;margin-top: ${
+		NativeAdHeight / 30
+	}px !important;padding: 0 ${NativeAdHeight / 28}px !important`;
 	AFNativeText.id = `AFNativeText${nativeIndex}`;
 	document
 		.getElementById(`AFNativeMainDiv${nativeIndex}`)
@@ -348,7 +408,9 @@ RenderNative = ({
 
 	//text title
 	const AFNativeTitle = document.createElement("div");
-	AFNativeTitle.style = `font-size: calc(((${NativeAdHeight}px / 19) + (${NativeAdWidth}px / 19)) / 2);font-weight: bold;`;
+	AFNativeTitle.style = `font-size: ${
+		(NativeAdHeight / 19 + NativeAdWidth / 19) / 2
+	}px  !important;font-weight: bold  !important`;
 	AFNativeTitle.id = `AFNativeTitle${nativeIndex}`;
 	document
 		.getElementById(`AFNativeText${nativeIndex}`)
@@ -364,7 +426,9 @@ RenderNative = ({
 
 	//text description
 	const AFNativeDescription = document.createElement("div");
-	AFNativeDescription.style = `font-size: calc(((${NativeAdHeight}px / 27.1428) + (${NativeAdWidth}px / 28.1428)) / 2)`;
+	AFNativeDescription.style = `font-size: ${
+		(NativeAdHeight / 27.1428 + NativeAdWidth / 28.1428) / 2
+	}px !important`;
 	AFNativeDescription.id = `AFNativeDescription${nativeIndex}`;
 	document
 		.getElementById(`AFNativeText${nativeIndex}`)
@@ -386,14 +450,11 @@ RenderNative = ({
 	//close ad
 	const ImgClose = document.createElement("img");
 	ImgClose.style =
-		"cursor:pointer;position: absolute; top: 0; left: 0; margin-top: 2px; margin-left: 2px;width: 20px; height: 20px;background-color: white;opacity: 0.1;";
-	ImgClose.src =
-		"https://ad-project.s3.ap-southeast-1.amazonaws.com/app-image/renderAds/close.png";
+		"cursor: pointer !important;position: absolute !important;top: 0 !important;left: 0 !important;margin-top: 2px !important;margin-left: 2px !important;width: 20px !important;height: 20px !important;background-color: white !important;opacity: 0.1 !important";
+	ImgClose.src = closeImageUrl;
 
 	ImgClose.onclick = function remove(event) {
-		const ins = document.getElementById(`tagIns${nativeIndex}`);
-		const deleteDiv = document.getElementById(`insDiv${nativeIndex}`);
-		ins.removeChild(deleteDiv);
+		document.getElementById(`tagIns${nativeIndex}`).remove();
 		event.preventDefault();
 	};
 
@@ -402,7 +463,7 @@ RenderNative = ({
 	onMouseOver = (index, style) => {
 		document.getElementById(
 			`AFNativeMainDiv${index}`
-		).style = `${style}cursor:pointer;border: 1px solid #d5d4eb;box-shadow: rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px,rgba(0, 0, 0, 0.09) 0px -3px 5px;`;
+		).style = `${style};cursor: pointer !important;border: 1px solid #d5d4eb !important;box-shadow: rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px,rgba(0, 0, 0, 0.09) 0px -3px 5px !important`;
 	};
 	onMouseOut = (index, style) => {
 		document.getElementById(`AFNativeMainDiv${index}`).style = style;
