@@ -59,7 +59,7 @@ window.mobileCheck = function () {
 	var containerId = 0;
 	var renderAdsUrl = "http://localhost:3001/creatives/render_ads";
 	var impressAdUrl = "http://localhost:3001/creatives/impression_ad";
-	var closeImageUrl = "http://localhost:3001/api/serverImage/close.png";
+	var closeImageUrl = "https://api.afbrother.com/api/serverImage/close.png";
 
 	// ad formats to check available container
 	let adFormats;
