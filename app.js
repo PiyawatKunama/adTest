@@ -4,11 +4,23 @@ const app = express();
 const port = process.env.PORT || 3800;
 
 app.get("/", (req, res) => {
-	res.sendFile("/test.html", { root: __dirname });
+	res.sendFile("/index.html", { root: __dirname });
 });
 
 app.get("/server", (req, res) => {
 	res.sendFile("/server.html", { root: __dirname });
+});
+
+app.get("/side", (req, res) => {
+	res.sendFile("/side.html", { root: __dirname });
+});
+
+app.get("/text-only", (req, res) => {
+	res.sendFile("/text-only.html", { root: __dirname });
+});
+
+app.get("/title-above", (req, res) => {
+	res.sendFile("/title-above.html", { root: __dirname });
 });
 
 app.get("/autoad.js", (req, res) => {

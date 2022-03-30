@@ -1,0 +1,128 @@
+<html>
+	<header>
+		<!-- IMAGE_ABOVE, IMAGE_ON_SIDE, TITLE_ABOVE, TEXT_ONLY, -->
+		<script type="module">
+			const TextPosition = "TEXT_ONLY";
+			const width = 600;
+			const height = 200;
+			let defaultMainImage = 50;
+			const adScale = width / height;
+
+			if (width / height > 2) {
+				defaultMainImage = (1 / adScale) * 100;
+			}
+
+			let titleHeight = "";
+			let adDataHeight = 100;
+			let dividerTitle = 12;
+			let dividerDescription = 14;
+			let mainHeight = 100;
+
+			if (TextPosition === "TITLE_ABOVE") {
+				titleHeight = "height: 10%;";
+				adDataHeight = 82;
+				mainHeight = 90;
+			}
+
+			if (TextPosition === "TEXT_ONLY") {
+				dividerTitle = 10;
+				dividerDescription = 12;
+				adDataHeight = 82;
+			}
+
+			// ins
+			const ins = document.getElementById("ins");
+			ins.style = `text-decoration: none !important;
+						display: inline-block !important;
+						width: ${width}px;
+						height: ${height}px;`;
+
+			const mainAd = document.createElement("div");
+			mainAd.style = `display: table; height: ${mainHeight}%; width: 100%`;
+			ins.appendChild(mainAd);
+
+			// ad image
+			if (TextPosition !== "TEXT_ONLY") {
+				const mainImage = document.createElement("div");
+				mainImage.style = `width: ${defaultMainImage}%;
+									max-height: 100%;
+									display: table-cell;
+									vertical-align: middle;
+									text-align: center;`;
+				mainAd.appendChild(mainImage);
+
+				const image = document.createElement("img");
+				image.style = `max-width: 100%; max-height: ${height}px;`;
+				image.src =
+					"http://localhost:3001/creatives/adDisplay/4cc71855-c858-4b1d-8df7-3cce8cccfbf1";
+				image.alt =
+					"http://localhost:3001/creatives/adDisplay/4cc71855-c858-4b1d-8df7-3cce8cccfbf1";
+				mainImage.appendChild(image);
+			}
+
+			// ad data
+			const adData = document.createElement("div");
+			adData.style = `height: ${adDataHeight}% !important;
+							display: flex !important;
+							flex-direction: column !important;
+							vertical-align: middle !important;
+							padding: ${defaultMainImage / 10}% !important`;
+
+			mainAd.appendChild(adData);
+
+			// ad text
+			const adText = document.createElement("div");
+			adText.style = `height: 100% !important; display: flex !important; flex-direction: column !important`;
+			adData.appendChild(adText);
+
+			// ad text variable
+			const textDivWidth = width * (1 - defaultMainImage / 100);
+			const weight = textDivWidth + height * adScale;
+			const weightAvg = weight / (1 + adScale);
+
+			// title
+			const title = document.createElement("div");
+			title.style = `${titleHeight}
+						font-weight: bold !important;
+						text-transform: capitalize !important;
+						font-size: ${weightAvg / dividerTitle}px !important`;
+			title.innerHTML = "the SunGoose summer collection";
+			if (TextPosition === "TITLE_ABOVE") {
+				ins.prepend(title);
+			} else {
+				adText.appendChild(title);
+			}
+
+			// description
+			const description = document.createElement("div");
+			description.style = `font-size:${
+				weightAvg / dividerDescription
+			}px !important;
+						text-transform: capitalize !important;
+						margin-top: 1% !important;`;
+			description.innerHTML =
+				"No trace of the wild South China tiger, Panthera tigris amoyensis (critically endangered, possibly extinct in the wild), has been seen for more than a decade.Zoos hold fewer than 200 has been seen for more than a decade. Zoos hold fewer than 200 b s";
+			adText.appendChild(description);
+
+			// ad button
+			if (TextPosition !== "TEXT_ONLY") {
+				const adButton = document.createElement("button");
+				adButton.style = `padding: ${weightAvg / 30}px !important;
+						font-size:${weightAvg / 18}px !important;
+						margin: 0 0 auto auto !important;
+						align-items: center !important;
+						background-color: #ffffff !important;
+						border: 1px solid rgb(175, 171, 171) !important;
+						border-radius: 0.25rem !important;
+						cursor: pointer !important`;
+				adButton.innerHTML = "Visit Site";
+				adData.appendChild(adButton);
+			}
+		</script>
+	</header>
+	<body>
+		<ins id="ins"> </ins>
+
+		<!DOCTYPE html>
+	</body>
+</html>

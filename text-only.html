@@ -1,0 +1,67 @@
+<html>
+	<header>
+		<script type="module">
+			let width = 400;
+			const height = 100;
+
+			const ins = document.getElementById("ins");
+			ins.style.width = `${width}px`;
+			ins.style.height = `${height}px`;
+
+			const mainText = document.getElementById("mainText");
+
+			const text1 = document.getElementById("text1");
+			text1.style.fontSize = `${
+				(width / 10 + (height / 10) * (width / height)) /
+				(1 + width / height)
+			}px`;
+
+			const text2 = document.getElementById("text2");
+			text2.style.fontSize = `${
+				(width / 12 + (height / 12) * (width / height)) /
+				(1 + width / height)
+			}px`;
+		</script>
+	</header>
+	<body>
+		<ins
+			id="ins"
+			style="
+				text-decoration: none !important;
+				display: inline-block !important;
+			"
+		>
+			<div
+				id="mainText"
+				style="height: 100%; display: flex; flex-direction: column"
+			>
+				<div style="margin: auto">
+					<div
+						id="text1"
+						style="
+							font-weight: bold !important;
+							text-transform: capitalize !important;
+						"
+					>
+						the SunGoose summer collection
+					</div>
+					<div
+						id="text2"
+						style="
+							text-transform: capitalize !important;
+							margin-top: 1%;
+						"
+					>
+						No trace of the wild South China tiger, Panthera tigris
+						amoyensis (critically endangered, possibly extinct in
+						the wild), has been seen for more than a decade. Zoos
+						hold fewer than 200 has been seen for more than a
+						decade. Zoos hold fewer than 200 b s
+					</div>
+				</div>
+			</div>
+		</ins>
+
+		<!DOCTYPE html>
+	</body>
+</html>

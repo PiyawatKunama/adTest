@@ -1,0 +1,131 @@
+<html>
+	<header>
+		<script type="module">
+			let width = 1000;
+			const height = 200;
+			let defaultMainImage = 0;
+			if (width / height <= 2) {
+				defaultMainImage = 50;
+			} else {
+				defaultMainImage = (1 / (width / height)) * 100;
+			}
+
+			const ins = document.getElementById("ins");
+			ins.style.width = `${width}px`;
+			ins.style.height = `${height}px`;
+
+			const mainImage = document.getElementById("mainImage");
+			mainImage.style.width = `${defaultMainImage}%`;
+
+			const image = document.getElementById("image");
+			image.style.maxHeight = "fit-content";
+			image.style.maxWidth = "100%";
+
+			width = width * (1 - defaultMainImage / 100);
+
+			const mainText = document.getElementById("mainText");
+			mainText.style.padding = `0 ${defaultMainImage / 10}%`;
+
+			const text1 = document.getElementById("text1");
+			text1.style.fontSize = `${
+				(width / 12 + (height / 12) * (width / height)) /
+				(1 + width / height)
+			}px`;
+
+			const text2 = document.getElementById("text2");
+			text2.style.fontSize = `${
+				(width / 18 + (height / 18) * (width / height)) /
+				(1 + width / height)
+			}px`;
+
+			const button = document.getElementById("text");
+			button.style.fontSize = `${
+				(width / 18 + (height / 18) * (width / height)) /
+				(1 + width / height)
+			}px`;
+			button.style.padding = `${
+				(width / 18 + (height / 18) * (width / height)) /
+				((1 + width / height) * 2)
+			}px`;
+			button.style.margin = `0 0 auto auto`;
+		</script>
+	</header>
+	<body>
+		<ins
+			id="ins"
+			style="
+				text-decoration: none !important;
+				display: inline-block !important;
+			"
+		>
+			<div
+				id="text1"
+				style="
+					font-weight: bold !important;
+					text-transform: capitalize !important;
+					height: 10%;
+				"
+			>
+				the SunGoose summer collection
+			</div>
+			<div
+				id="main"
+				style="
+					display: table;
+					height: 90%;
+					width: 100%;
+					margin-top: 1.5%;
+				"
+			>
+				<div
+					id="mainImage"
+					style="
+						max-height: 100%;
+						display: table-cell;
+						vertical-align: middle;
+						text-align: center;
+					"
+				>
+					<img
+						id="image"
+						src="http://localhost:3001/creatives/adDisplay/4cc71855-c858-4b1d-8df7-3cce8cccfbf1"
+						alt="http://localhost:3001/creatives/adDisplay/4cc71855-c858-4b1d-8df7-3cce8cccfbf1"
+					/>
+				</div>
+
+				<div
+					id="mainText"
+					style="height: 100%; display: flex; flex-direction: column"
+				>
+					<div style="margin: auto">
+						<div
+							id="text2"
+							style="text-transform: capitalize !important"
+						>
+							No trace of the wild South China tiger, Panthera
+							tigris amoyensis (critically endangered, possibly
+							extinct in the wild), has been seen for more than a
+							decade. Zoos hold fewer than 200 has been seen for
+							more than a decade. Zoos hold fewer than 200 b s
+						</div>
+					</div>
+
+					<button
+						id="text"
+						style="
+							align-items: center;
+							background-color: #ffffff;
+							border: 1px solid rgb(175, 171, 171);
+							border-radius: 0.25rem;
+							cursor: pointer;
+						"
+					>
+						Visit Site
+					</button>
+				</div>
+			</div>
+		</ins>
+
+		<!DOCTYPE html>
+	</body>
+</html>
