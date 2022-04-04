@@ -69,6 +69,7 @@ generateAds = async () => {
 
 	const response = await fetch(renderAdsUrl, requestOptions);
 	const resAdsData = await response.json();
+
 	for (let i = 0; i < resAdsData.length; i++) {
 		const adData = resAdsData[i];
 
@@ -87,10 +88,6 @@ generateAds = async () => {
 					elementInViewport = RenderNativeVertical({
 						insElem,
 						nativeIndex: adIndex,
-						urlSrc: adData.url,
-						urlHref: adData.href,
-						nativeAdTitle: adData.title,
-						nativeAdDescription: adData.description,
 						adData,
 						placedIds,
 					});
@@ -98,12 +95,6 @@ generateAds = async () => {
 					elementInViewport = RenderNativeHorizontal({
 						insElem,
 						nativeIndex: adIndex,
-						urlSrc: adData.url,
-						urlHref: adData.href,
-						text_position: adData.text_position,
-						text_position: adData.text_position,
-						nativeAdTitle: adData.title,
-						nativeAdDescription: adData.description,
 						adData,
 						placedIds,
 					});
@@ -338,16 +329,7 @@ RenderPop = (url) => {
 	element.setAttribute("href", url);
 	window.open(element, "", `width=${screen.width} height=${screen.height}`);
 };
-RenderNativeVertical = ({
-	insElem,
-	nativeIndex,
-	urlSrc,
-	urlHref,
-	nativeAdDescription,
-	nativeAdTitle,
-	adData,
-	placedIds,
-}) => {
+RenderNativeVertical = ({ insElem, nativeIndex, adData, placedIds }) => {
 	placedIds[adData.adKey] = {
 		insElem,
 		creativeCampaign_Key: adData.key,
@@ -359,7 +341,7 @@ RenderNativeVertical = ({
 	const NativeAdWidth = sizesTypeText[0].replace(/[^0-9]/g, "");
 	const NativeAdHeight = sizesTypeText[1].replace(/[^0-9]/g, "");
 
-	insElem.style = `${adStyle};text-decoration: none !important;display: inline-block !important`;
+	insElem.style = `${adStyle};text-decoration: none !important;display: inline-block !important;background-color: rgba(255, 255, 255, 0.5) !important;position: relative !important;`;
 
 	//ins div
 	const insDiv = document.createElement("div");
@@ -368,7 +350,7 @@ RenderNativeVertical = ({
 	document.getElementById(`tagIns${nativeIndex}`).appendChild(insDiv);
 
 	// native main div
-	const MainNativeStyle = `-webkit-box-sizing: unset !important;box-sizing: unset !important;line-height: normal !important;border: 0.7px solid #d5d4eb !important;padding: ${
+	const MainNativeStyle = `-webkit-box-sizing: unset !important;box-sizing: unset !important;line-height: normal !important;padding: ${
 		NativeAdHeight / 20
 	}px ${NativeAdWidth / 20}px !important;width: ${
 		NativeAdWidth - NativeAdWidth / 9.5
@@ -387,7 +369,7 @@ RenderNativeVertical = ({
 		"onmouseout",
 		`onMouseOut("${nativeIndex}","${insElem.getAttribute("style")}")`
 	);
-	AFNativeMainDiv.setAttribute("onclick", "onClick()");
+	AFNativeMainDiv.setAttribute("onclick", `onClickAFAd("${adData.href}")`);
 	document
 		.getElementById(`insDiv${nativeIndex}`)
 		.appendChild(AFNativeMainDiv);
@@ -404,8 +386,8 @@ RenderNativeVertical = ({
 
 	//image
 	const AFNativeImage = document.createElement("img");
-	AFNativeImage.src = urlSrc;
-	AFNativeImage.alt = urlSrc;
+	AFNativeImage.src = adData.url;
+	AFNativeImage.alt = adData.url;
 	AFNativeImage.style =
 		"height: auto !important;width: auto !important;max-height: 100% !important;max-width: 100% !important;margin: auto !important;position: absolute !important;left: 0 !important;right: 0 !important;top: 0 !important;bottom: 0 !important";
 	document
@@ -414,7 +396,7 @@ RenderNativeVertical = ({
 
 	//text
 	const AFNativeText = document.createElement("div");
-	AFNativeText.style = `font-family: Sans-serif !important;margin-top: ${
+	AFNativeText.style = `font-family: serif !important;margin-top: ${
 		NativeAdHeight / 30
 	}px !important;padding: 0 ${NativeAdHeight / 28}px !important`;
 	AFNativeText.id = `AFNativeText${nativeIndex}`;
@@ -426,63 +408,58 @@ RenderNativeVertical = ({
 	const AFNativeTitle = document.createElement("div");
 	AFNativeTitle.style = `font-size: ${
 		(NativeAdHeight / 19 + NativeAdWidth / 19) / 2
-	}px  !important;font-weight: bold  !important;text-transform: capitalize !important;`;
+	}px  !important;font-weight: bold  !important;text-transform: capitalize !important; word-wrap: break-word !important;`;
 	AFNativeTitle.id = `AFNativeTitle${nativeIndex}`;
 	document
 		.getElementById(`AFNativeText${nativeIndex}`)
 		.appendChild(AFNativeTitle);
-	if (nativeAdTitle.length > 25) {
+	if (adData.title.length > 25) {
 		document.getElementById(
 			`AFNativeTitle${nativeIndex}`
-		).innerHTML = `${nativeAdTitle.substring(0, 25)}..`;
+		).innerHTML = `${adData.title.substring(0, 25)}..`;
 	} else {
 		document.getElementById(`AFNativeTitle${nativeIndex}`).innerHTML =
-			nativeAdTitle;
+			adData.title;
 	}
 
 	//text description
 	const AFNativeDescription = document.createElement("div");
 	AFNativeDescription.style = `font-size: ${
 		(NativeAdHeight / 27.1428 + NativeAdWidth / 28.1428) / 2
-	}px !important;text-transform: capitalize !important;`;
+	}px !important;text-transform: capitalize !important; word-wrap: break-word !important;`;
 	AFNativeDescription.id = `AFNativeDescription${nativeIndex}`;
 	document
 		.getElementById(`AFNativeText${nativeIndex}`)
 		.appendChild(AFNativeDescription);
 
-	if (nativeAdDescription.length > 122) {
+	if (adData.description.length > 122) {
 		document.getElementById(
 			`AFNativeDescription${nativeIndex}`
-		).innerHTML = `${nativeAdDescription.substring(0, 122)}.. <br/><button
-		style="
-			padding: ${2}% !important;
-			font-size: ${
-				(NativeAdHeight / 27.1428 + NativeAdWidth / 28.1428) / 2
-			}px !important;
-			background-color: #ffffff !important;
-			border: 1px solid rgb(175, 171, 171) !important;
-			border-radius: 0.25rem !important;
-			cursor: pointer !important;
-			float: right;
-		"
-	> Visit Site </button>`;
+		).innerHTML = `${adData.description.substring(0, 122)}..`;
 	} else {
 		document.getElementById(
 			`AFNativeDescription${nativeIndex}`
-		).innerHTML = `${nativeAdDescription} <br/> <button
-		style="
-		padding: ${2}% !important;
-		font-size: ${
-			(NativeAdHeight / 27.1428 + NativeAdWidth / 28.1428) / 2
-		}px !important;
-		background-color: #ffffff !important;
-		border: 1px solid rgb(175, 171, 171) !important;
-		border-radius: 0.25rem !important;
-		cursor: pointer !important;
-		float: right;
-		"
-	> Visit Site </button>`;
+		).innerHTML = `${adData.description}`;
 	}
+
+	const adButton = document.createElement("button");
+	adButton.style = `	padding: ${2}% !important;
+				font-size: ${(NativeAdHeight / 27.1428 + NativeAdWidth / 28.1428) / 2};
+				position: absolute !important;
+				bottom: 0 !important;
+				right: 0 !important;
+				margin-right: 0.5% !important;
+				margin-bottom: 0.5% !important;
+				align-items: center !important;
+				font-family: serif !important;
+				background-color: rgba(255, 255, 255, 0.4) !important;
+				border: 1px solid rgb(175, 171, 171) !important;
+				border-radius: 0.25rem !important;
+				cursor: pointer !important`;
+	adButton.setAttribute("onclick", `onClickAFAd("${adData.href}")`);
+
+	adButton.innerHTML = "Visit Site";
+	insElem.appendChild(adButton);
 
 	//close ad
 	const ImgClose = document.createElement("img");
@@ -495,7 +472,7 @@ RenderNativeVertical = ({
 		event.preventDefault();
 	};
 
-	document.getElementById(`insDiv${nativeIndex}`).appendChild(ImgClose);
+	insElem.appendChild(ImgClose);
 
 	onMouseOver = (index, style) => {
 		document.getElementById(
@@ -506,24 +483,14 @@ RenderNativeVertical = ({
 	onMouseOut = (index, style) => {
 		document.getElementById(`tagIns${index}`).style = style;
 	};
-	onClick = () => {
-		window.open(urlHref);
+	onClickAFAd = (href) => {
+		window.open(href);
 	};
 
 	return insElem;
 };
 
-RenderNativeHorizontal = ({
-	insElem,
-	nativeIndex,
-	urlSrc,
-	urlHref,
-	nativeAdDescription,
-	text_position,
-	nativeAdTitle,
-	adData,
-	placedIds,
-}) => {
+RenderNativeHorizontal = ({ insElem, nativeIndex, adData, placedIds }) => {
 	placedIds[adData.adKey] = {
 		insElem,
 		creativeCampaign_Key: adData.key,
@@ -535,50 +502,34 @@ RenderNativeHorizontal = ({
 	const NativeAdWidth = sizesTypeText[0].replace(/[^0-9]/g, "");
 	const NativeAdHeight = sizesTypeText[1].replace(/[^0-9]/g, "");
 
-	let width = NativeAdWidth;
-	let height = NativeAdHeight;
-	const insPadding = height * 0.05;
+	let width = +NativeAdWidth;
+	let height = +NativeAdHeight;
 
-	width = width - insPadding * 2;
-	height = height - insPadding * 2;
-
-	let defaultMainImage = 50;
 	const adScale = width / height;
 
 	insElem.style = `text-decoration: none !important;
 			display: inline-block !important;
-			width: ${width}px;
-			height: ${height}px;
-			padding: ${insPadding}px;	
 			position: relative !important;
-			border: 1px solid rgb(214 210 210)`;
+			background-color: rgba(255, 255, 255, 0.5) !important;
+			width: ${width}px !important;
+			height: ${height}px !important;`;
 
-	if (width / height > 2) {
-		defaultMainImage = (1 / adScale) * 100;
-	}
+	let dividerTitle = 6;
+	let dividerDescription = 8;
 
-	let titleHeight = "";
-	let adDataHeight = 100;
-	let dividerTitle = 8;
-	let dividerDescription = 10;
-	let mainHeight = 100;
-
-	if (text_position === "TITLE_ABOVE") {
-		titleHeight = "height: 10%;";
-		adDataHeight = 82;
-		mainHeight = 90;
-		dividerTitle = 8;
-
-		dividerDescription = 10;
-	}
-
-	if (text_position === "TEXT_ONLY") {
+	if (adData.text_position === "TEXT_ONLY") {
 		dividerTitle = 6;
-		dividerDescription = 8;
-		adDataHeight = 82;
+		dividerDescription = 7;
 	}
 
-	const MainNativeStyle = `display: table; height: ${mainHeight}%; width: 100%`;
+	let MainNativeStyle = `width: ${width}px;height: ${height}px;text-align: center;`;
+	let imageHeightScale = 0.95;
+	if (adData.text_position === "TITLE_ABOVE") {
+		MainNativeStyle = `width: ${width}px;height: ${
+			height * 0.8
+		}px;text-align: center;`;
+		imageHeightScale = 0.75;
+	}
 	const mainAd = document.createElement("div");
 	mainAd.id = `mainAd${nativeIndex}`;
 	mainAd.style = MainNativeStyle;
@@ -591,61 +542,82 @@ RenderNativeHorizontal = ({
 		"onmouseout",
 		`onMouseOut("${nativeIndex}","${insElem.getAttribute("style")}")`
 	);
-	mainAd.setAttribute("onclick", "onClick()");
+	mainAd.setAttribute("onclick", `onClickAFAd("${adData.href}")`);
 	insElem.appendChild(mainAd);
 
-	// ad image
-	if (text_position !== "TEXT_ONLY") {
-		const mainImage = document.createElement("div");
-		mainImage.style = `width: ${defaultMainImage}%;
-							max-height: 100%;
-							display: table-cell;
-							vertical-align: middle;
-							text-align: center;`;
-		mainAd.appendChild(mainImage);
-
-		const image = document.createElement("img");
-		image.style = `max-width: 100%; max-height: ${height}px;`;
-		image.src = urlSrc;
-		image.alt = "AFNativeAd";
-		mainImage.appendChild(image);
+	let maxWidthImage = width - (width - height) + width * 0.1;
+	let maxWidthText = width - height - width * 0.15;
+	if (adScale < 3) {
+		maxWidthImage = width / 2.25;
+		maxWidthText = width / 2;
 	}
 
+	// ad image
+	if (adData.text_position !== "TEXT_ONLY") {
+		const imageParent = document.createElement("div");
+		imageParent.style = `height: ${
+			height * imageHeightScale
+		}px !important;width: ${maxWidthImage}px !important;background-color: rgba(255, 255, 255, 0.3) !important;float: left;margin-left: 2%;margin-top: ${
+			height * 0.02
+		}px;`;
+		mainAd.appendChild(imageParent);
+		const image = document.createElement("img");
+		image.style = `
+		max-width: 100% !important;
+		max-height: 100% !important;
+		position: relative !important;
+		top: 50% !important;
+		transform: translateY(-50%) !important;`;
+		// image.style = `
+		// max-width: ${maxWidthImage}px !important;
+		// max-height: ${height * imageHeightScale}px !important;`;
+		image.src = adData.url;
+		image.alt = "AFNativeAd";
+		imageParent.appendChild(image);
+	}
+
+	if (adData.text_position === "TEXT_ONLY") {
+		maxWidthText = width;
+	}
 	// ad data
 	const adDataDiv = document.createElement("div");
-	adDataDiv.style = `height: ${adDataHeight}% !important;
-					display: flex !important;
-					flex-direction: column !important;
-					vertical-align: middle !important;
-					padding: ${defaultMainImage / 10}% !important`;
-
+	adDataDiv.style = `	max-width: ${maxWidthText}px !important;
+	height: 100% !important;	
+	float: right !important;
+	text-align: center !important;
+	position: relative !important;`;
 	mainAd.appendChild(adDataDiv);
 
 	// ad text
 	const adText = document.createElement("div");
-	adText.style = `height: 100% !important; display: flex !important; flex-direction: column !important`;
+	adText.style = `max-width: 95% !important;
+	max-height: 100% !important;
+	position: relative !important;
+	top: 50% !important;
+	transform: translateY(-50%) !important;
+	text-align: left !important;`;
 	adDataDiv.appendChild(adText);
 
 	// ad text variable
-	const textDivWidth = width * (1 - defaultMainImage / 100);
-	const textDivHeight = height * (1 - defaultMainImage / 100);
+	const textDivWidth = maxWidthText;
+	const textDivHeight = height;
 	const weight = textDivWidth + textDivHeight * adScale;
-	const weightAvg = weight / (1 + adScale);
+	const weightAvg = weight / (4 + adScale);
 
 	// title
 	const title = document.createElement("div");
-	title.style = `${titleHeight}
-				font-weight: bold !important;
+	title.style = `font-weight: bold !important;
 				text-transform: capitalize !important;
+				font-family: serif !important;
+				overflow-wrap: break-word !important;
 				font-size: ${weightAvg / dividerTitle}px !important`;
-
-	if (nativeAdTitle.length > 30) {
-		title.innerHTML = `${nativeAdTitle.substring(0, 30)}..`;
+	if (adData.title.length > 40) {
+		title.innerHTML = `${adData.title.substring(0, 40)}..`;
 	} else {
-		title.innerHTML = nativeAdTitle;
+		title.innerHTML = adData.title;
 	}
-	if (text_position === "TITLE_ABOVE") {
-		title.style.marginBottom = "1%";
+	if (adData.text_position === "TITLE_ABOVE") {
+		title.style.marginLeft = "2%";
 		insElem.prepend(title);
 	} else {
 		adText.appendChild(title);
@@ -656,52 +628,33 @@ RenderNativeHorizontal = ({
 	description.style = `font-size:${
 		weightAvg / dividerDescription
 	}px !important;
-				text-transform: capitalize !important;
-				margin-top: 1% !important;`;
-	if (text_position !== "TEXT_ONLY") {
-		description.innerHTML = nativeAdDescription;
-	} else {
-		if (nativeAdDescription.length > 150) {
-			description.innerHTML = `${nativeAdDescription.substring(
-				0,
-				150
-			)}.. <br/><button
-			style="
-				padding: ${1}% !important;
-				font-size: ${weightAvg / dividerDescription / 1.5}px !important;
-				position: absolute !important;
-				bottom: 0px !important;
-				right: 0px !important;
-				margin: 0 1% 1% 0;
-				background-color: #ffffff !important;
-				border: 1px solid rgb(175, 171, 171) !important;
-				border-radius: 0.25rem !important;
-				cursor: pointer !important;
-				float: right;
-			"
-		> Visit Site </button>`;
-		} else {
-			description.innerHTML = `${nativeAdDescription} <span style='color: blue;text-decoration: underline;'> More info....</span>`;
-		}
-	}
+	text-transform: capitalize !important;
+	font-family: serif !important;
+	overflow-wrap: break-word !important;
+	margin-top: ${height * 0.02}px !important;`;
+	description.innerHTML = adData.description;
 
 	adText.appendChild(description);
 
 	// ad button
-	if (text_position !== "TEXT_ONLY") {
-		const adButton = document.createElement("button");
-		adButton.style = `padding: ${weightAvg / 30}px !important;
-				font-size:${weightAvg / 18}px !important;
-				margin: 0 0 2% auto !important;
+	const adButton = document.createElement("button");
+	adButton.style = `padding: ${weightAvg / 40}px !important;
+				font-size:${weightAvg / 15}px !important;
+				position: absolute !important;
+				bottom: 0 !important;
+				right: 0 !important;
+				margin-right: 0.5% !important;
+				margin-bottom: 0.5% !important;
 				align-items: center !important;
-				background-color: #ffffff !important;
+				font-family: serif !important;
+				background-color: rgba(255, 255, 255, 0.4) !important;
 				border: 1px solid rgb(175, 171, 171) !important;
 				border-radius: 0.25rem !important;
 				cursor: pointer !important`;
+	adButton.setAttribute("onclick", `onClickAFAd("${adData.href}")`);
 
-		adButton.innerHTML = "Visit Site";
-		adDataDiv.appendChild(adButton);
-	}
+	adButton.innerHTML = "Visit Site";
+	insElem.appendChild(adButton);
 
 	//close ad
 	const ImgClose = document.createElement("img");
@@ -725,8 +678,8 @@ RenderNativeHorizontal = ({
 	onMouseOut = (index, style) => {
 		document.getElementById(`tagIns${index}`).style = style;
 	};
-	onClick = () => {
-		window.open(urlHref);
+	onClickAFAd = (href) => {
+		window.open(href);
 	};
 
 	return insElem;
