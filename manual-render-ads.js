@@ -132,7 +132,15 @@ generateAds = async () => {
 						RenderHeader(divElem, adIndex);
 						break;
 					case "SLIDE":
-						RenderSlide(adData, insElem, divElem, adIndex);
+						console.log(adsData);
+						const sticky_ads = adsData.filter(
+							(ads) => ads.banner_format === "STICKY"
+						);
+						let sticky_ad = { height: 0 };
+						if (sticky_ads.length) {
+							sticky_ad = sticky_ads[0];
+						}
+						RenderSlide(sticky_ad, insElem, divElem, adIndex);
 						break;
 					case "IN_PAGE":
 						document
@@ -248,7 +256,7 @@ generateAds = async () => {
 generateBannerAdsDisplay = (adIndex, adData, adStyle) => {
 	// A
 	const AElem = document.createElement("a");
-	AElem.style = "display: inline-block !important";
+	AElem.style = `display: inline-block !important; ${adStyle}`;
 	AElem.id = `tagA${adIndex}`;
 	AElem.setAttribute("href", adData.href);
 	AElem.target = "_blank";
