@@ -34,3 +34,9 @@ app.get("/manual-render-ads.js", (req, res) => {
 app.listen(port, () => {
 	console.log(`Example app listening on port ${port}`);
 });
+
+app.get("/jimmy", (req, res) => {
+	console.log(req);
+	console.log("req.headers", req.headers);
+	res.send("jimmy");
+});

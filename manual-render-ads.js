@@ -1,3 +1,5 @@
+console.log(0);
+
 var renderAdsUrl = "http://localhost:3001/creatives/render_ads";
 var impressAdUrl = "http://localhost:3001/creatives/impression_ad";
 var closeImageUrl = "http://localhost:3001/api/serverImage/close.png";
@@ -5,6 +7,7 @@ var closeImageUrl = "http://localhost:3001/api/serverImage/close.png";
 var adsInView = {};
 var adsData = {};
 var impressionCount = 0;
+var adDelayTime = 200;
 
 function getViewPortSize() {
 	var viewportwidth;
@@ -38,225 +41,300 @@ function getViewPortSize() {
 
 generateAds = async () => {
 	var placedIds = {};
+	console.log(2);
 
-	const AFelements = document.getElementsByClassName("AFbrother");
-
-	const webKey = AFelements[0].getAttribute("data-web-key");
-	const adKeys = [];
-	for (let i = 0; i < AFelements.length; i++) {
-		const adKey = AFelements[i].getAttribute("data-creative-web-key");
-		if (!adKeys.includes(adKey)) {
-			adKeys.push(adKey);
-		}
-	}
-
-	const headers = new Headers();
-	headers.append("Access-Control-Allow-Origin", "*");
-	headers.append("Content-Type", "application/json");
-	headers.append("Pragma", "no-store, no-cache");
-
-	const body = JSON.stringify({
-		webKey,
-		adKeys,
-	});
-
-	const requestOptions = {
-		method: "POST",
-		headers,
-		body,
-		redirect: "follow",
-	};
-
-	const response = await fetch(renderAdsUrl, requestOptions);
-	const resAdsData = await response.json();
-
-	for (let i = 0; i < resAdsData.length; i++) {
-		const adData = resAdsData[i];
-
-		const adIndex = i + 1;
-		let elementInViewport;
-		let insElem;
-		switch (adData.ad_format) {
-			case "NATIVE":
-				//ins
-				insElem = document.querySelector(
-					`ins[data-creative-web-key='${adData.adKey}']`
-				);
-				insElem.id = `tagIns${adIndex}`;
-
-				if (adData.text_position === "IMAGE_ABOVE") {
-					elementInViewport = RenderNativeVertical({
-						insElem,
-						nativeIndex: adIndex,
-						adData,
-						placedIds,
-					});
-				} else {
-					elementInViewport = RenderNativeHorizontal({
-						insElem,
-						nativeIndex: adIndex,
-						adData,
-						placedIds,
-					});
-				}
-
-				break;
-			case "POP":
-				RenderPop(adData.url);
-				break;
-			case "BANNER":
-				// ins
-				insElem = document.querySelector(
-					`ins[data-creative-web-key='${adData.adKey}']`
-				);
-
-				elementInViewport = insElem;
-				insElem.id = `tagIns${adIndex}`;
-				let adStyle = insElem.getAttribute("style");
-
-				insElem.style = "display: inline-block !important";
-
-				// main div
-				const divElem = document.createElement("div");
-				divElem.id = `tagDiv${adIndex}`;
-				divElem.style = "display: inline-block !important";
-				switch (adData.banner_format) {
-					case "STICKY":
-						document.body.append(insElem);
-						RenderSticky(divElem, adStyle, adIndex);
-						break;
-					case "HEADER":
-						document.body.style =
-							"margin-top: 0 !important;padding-top: 0 !important";
-						document.body.prepend(insElem);
-						RenderHeader(divElem, adIndex);
-						break;
-					case "SLIDE":
-						console.log(adsData);
-						const sticky_ads = adsData.filter(
-							(ads) => ads.banner_format === "STICKY"
-						);
-						let sticky_ad = { height: 0 };
-						if (sticky_ads.length) {
-							sticky_ad = sticky_ads[0];
-						}
-						RenderSlide(sticky_ad, insElem, divElem, adIndex);
-						break;
-					case "IN_PAGE":
-						document
-							.getElementById(`tagIns${adIndex}`)
-							.appendChild(divElem);
-						adStyle = `display: inline-block !important;${adStyle}`;
-						break;
-				}
-				generateBannerAdsDisplay(adIndex, adData, adStyle);
-				placedIds[adData.adKey] = {
-					insElem,
-					creativeCampaign_Key: adData.key,
-					creativeWebsite_Key: adData.adKey,
-				};
-				break;
+	var myInterval = setInterval(async function () {
+		const newAFelements = document.getElementsByClassName("AFbrother");
+		if (window.AFAdsScriptRerender) {
+			window.AFAdsScriptRerender++;
+		} else {
+			window.AFAdsScriptRerender = 1;
 		}
 
-		var data = JSON.stringify({
+		if (newAFelements[0]) {
+			if (window.AFDisplayed) {
+				const deletedDisplayed = [...newAFelements];
+
+				const newAd = [];
+				for (let i = deletedDisplayed.length - 1; i >= 0; i--) {
+					const displayAd = deletedDisplayed[i];
+					const key = displayAd.getAttribute("data-creative-web-key");
+					if (!window.AFDisplayed.includes(key)) {
+						newAd.push(deletedDisplayed[i]);
+					}
+				}
+
+				if (newAd.length) {
+					await createAd(newAd);
+				}
+			} else {
+				await createAd(newAFelements);
+			}
+		}
+		if (window.AFAdsScriptRerender >= 2) {
+			if (window.AFDisplayed.length === newAFelements.length) {
+				clearInterval(myInterval);
+			}
+			adDelayTime = 1500;
+		}
+
+		if (window.AFAdsScriptRerender >= 7) {
+			if (window.AFDisplayed.length === newAFelements.length) {
+				clearInterval(myInterval);
+			}
+		}
+		if (window.AFAdsScriptRerender >= 12) {
+			clearInterval(myInterval);
+		}
+	}, adDelayTime);
+
+	console.log(3);
+
+	async function createAd(AFelements) {
+		const webKey = AFelements[0].getAttribute("data-web-key");
+
+		const adKeys = [];
+		let isFirstDisplayed = false;
+		for (let i = 0; i < AFelements.length; i++) {
+			const adKey = AFelements[i].getAttribute("data-creative-web-key");
+
+			if (window.AFDisplayed) {
+				if (!window.AFDisplayed.includes(adKey)) {
+					window.AFDisplayed.push(adKey);
+				}
+			} else {
+				window.AFDisplayed = [adKey];
+				isFirstDisplayed = true;
+			}
+			if (!adKeys.includes(adKey)) {
+				adKeys.push(adKey);
+			}
+		}
+		if (isFirstDisplayed) {
+			window.AFFirstDisplayLength = window.AFDisplayed.length;
+		}
+		console.log(4);
+
+		const headers = new Headers();
+		headers.append("Access-Control-Allow-Origin", "*");
+		headers.append("Content-Type", "application/json");
+		headers.append("Pragma", "no-store, no-cache");
+		headers.append("Cache-Control", "no-store, no-cache");
+
+		const body = JSON.stringify({
 			webKey,
-			adKey: adData.key,
-			adWebKey: adData.adKey,
+			adKeys,
 		});
 
-		adsData[adData.adKey] = data;
+		const requestOptions = {
+			method: "POST",
+			headers,
+			body,
+			redirect: "follow",
+		};
+		const response = await fetch(renderAdsUrl, requestOptions);
+		const resAdsData = await response.json();
+		console.log(4);
 
-		if (
-			adData.ad_format === "NATIVE" ||
-			(adData.ad_format === "BANNER" &&
-				adData.banner_format === "IN_PAGE")
-		) {
-			const inView = await isElementInViewport(elementInViewport);
+		for (let i = 0; i < resAdsData.length; i++) {
+			const adData = resAdsData[i];
 
-			if (inView) {
-				adsInView[insElem.getAttribute("id")] = new Date();
-				await checkTimeOnScreen(impressionCreative, insElem);
-			}
-		} else if (adData.ad_format === "POP") {
-			await impressionCreative(data, insElem);
-		} else {
-			setTimeout(async function () {
-				await impressionCreative(data, insElem);
-			}, 5000);
-		}
+			let adIndex = adData.adKey;
+			let elementInViewport;
+			let insElem;
+			switch (adData.ad_format) {
+				case "NATIVE":
+					//ins
+					insElem = document.querySelector(
+						`ins[data-creative-web-key='${adData.adKey}']`
+					);
+					insElem.id = `tagIns${adIndex}`;
 
-		async function impressionCreative(body, insElem) {
-			if (body) {
-				await fetch(impressAdUrl, {
-					...requestOptions,
-					body,
-				});
-				window[`windowImEl${insElem.getAttribute("id")}`] = true;
-				impressionCount += 1;
-				console.log("testBody", body);
-				console.log("testImCount", impressionCount);
-				return { success: true };
-			}
-		}
-
-		window.addEventListener("scroll", async function () {
-			for (var [key, value] of Object.entries(placedIds)) {
-				var insElem = value.insElem;
-				const windowImEl =
-					window[`windowImEl${insElem.getAttribute("id")}`];
-
-				const inViewTime = adsInView[insElem.getAttribute("id")];
-
-				if (!windowImEl) {
-					const isOnScreen = await isElementInViewport(insElem);
-					if (isOnScreen) {
-						if (!inViewTime) {
-							adsInView[insElem.getAttribute("id")] = new Date();
-
-							await checkTimeOnScreen(
-								impressionCreative,
-								insElem
-							);
-						}
+					if (adData.text_position === "IMAGE_ABOVE") {
+						elementInViewport = RenderNativeVertical({
+							insElem,
+							nativeIndex: adIndex,
+							adData,
+							placedIds,
+						});
 					} else {
-						if (inViewTime) {
-							adsInView[insElem.getAttribute("id")] = null;
+						elementInViewport = RenderNativeHorizontal({
+							insElem,
+							nativeIndex: adIndex,
+							adData,
+							placedIds,
+						});
+					}
+
+					break;
+				case "POP":
+					RenderPop(adData.url);
+					break;
+				case "BANNER":
+					// ins
+					insElem = document.querySelector(
+						`ins[data-creative-web-key='${adData.adKey}']`
+					);
+
+					elementInViewport = insElem;
+					insElem.id = `tagIns${adIndex}`;
+					let adStyle = insElem.getAttribute("style");
+					switch (adData.banner_format) {
+						case "SLIDE":
+							insElem.style =
+								"display: block !important;z-index: 2147483647 !important";
+							break;
+						case "HEADER":
+							insElem.style = `display: inline-block !important;width: ${window.innerWidth}px;z-index: 2147483647 !important`;
+							break;
+						default:
+							insElem.style = `display: inline-block !important;z-index: 2147483647 !important`;
+							break;
+					}
+
+					// main div
+					const divElem = document.createElement("div");
+					divElem.id = `tagDiv${adIndex}`;
+					divElem.style = "display: inline-block !important";
+					switch (adData.banner_format) {
+						case "STICKY":
+							document.body.append(insElem);
+							RenderSticky(divElem, adStyle, adIndex);
+							break;
+						case "HEADER":
+							document.body.style =
+								"margin-top: 0 !important;padding-top: 0 !important";
+							document.body.prepend(insElem);
+							RenderHeader(divElem, adIndex);
+							break;
+						case "SLIDE":
+							const sticky_ads = resAdsData.filter(
+								(ads) => ads.banner_format === "STICKY"
+							);
+							let sticky_ad = { height: 0 };
+							if (sticky_ads.length) {
+								sticky_ad = sticky_ads[0];
+							}
+							RenderSlide(sticky_ad, insElem, divElem, adIndex);
+							break;
+						case "IN_PAGE":
+							document
+								.getElementById(`tagIns${adIndex}`)
+								.appendChild(divElem);
+							adStyle = `display: inline-block !important;${adStyle}`;
+							break;
+					}
+					generateBannerAdsDisplay(adIndex, adData, adStyle);
+					placedIds[adData.adKey] = {
+						insElem,
+						creativeCampaign_Key: adData.key,
+						creativeWebsite_Key: adData.adKey,
+					};
+					break;
+			}
+
+			var data = JSON.stringify({
+				webKey,
+				adKey: adData.key,
+				adWebKey: adData.adKey,
+			});
+
+			adsData[adData.adKey] = data;
+
+			if (
+				adData.ad_format === "NATIVE" ||
+				(adData.ad_format === "BANNER" &&
+					adData.banner_format === "IN_PAGE")
+			) {
+				const inView = await isElementInViewport(elementInViewport);
+
+				if (inView) {
+					adsInView[insElem.getAttribute("id")] = new Date();
+					await checkTimeOnScreen(impressionCreative, insElem);
+				}
+			} else if (adData.ad_format === "POP") {
+				await impressionCreative(data, insElem);
+			} else {
+				setTimeout(async function () {
+					await impressionCreative(data, insElem);
+				}, 5000);
+			}
+
+			async function impressionCreative(body, insElem) {
+				if (body) {
+					await fetch(impressAdUrl, {
+						...requestOptions,
+						body,
+					});
+					window[`windowImEl${insElem.getAttribute("id")}`] = true;
+					impressionCount += 1;
+					return { success: true };
+				}
+			}
+
+			window.addEventListener("scroll", async function () {
+				for (var [key, value] of Object.entries(placedIds)) {
+					var insElem = value.insElem;
+					const windowImEl =
+						window[`windowImEl${insElem.getAttribute("id")}`];
+
+					const inViewTime = adsInView[insElem.getAttribute("id")];
+
+					if (!windowImEl) {
+						const isOnScreen = await isElementInViewport(insElem);
+						if (isOnScreen) {
+							if (!inViewTime) {
+								adsInView[insElem.getAttribute("id")] =
+									new Date();
+
+								await checkTimeOnScreen(
+									impressionCreative,
+									insElem
+								);
+							}
+						} else {
+							if (inViewTime) {
+								adsInView[insElem.getAttribute("id")] = null;
+							}
 						}
 					}
 				}
+			});
+
+			async function isElementInViewport(insElem) {
+				// Special bonus for those using jQuery
+				if (typeof jQuery === "function" && insElem instanceof jQuery) {
+					insElem = insElem[0];
+				}
+
+				var rect = await insElem.getBoundingClientRect();
+				const adHeight =
+					window.innerHeight || document.documentElement.clientHeight;
+				/* or $(window).height() */
+				const adWidth =
+					window.innerWidth || document.documentElement.clientWidth;
+				/* or $(window).width() */
+				const isInView =
+					rect.top >= 0 &&
+					rect.left >= 0 &&
+					rect.bottom <= adHeight &&
+					rect.right <= adWidth;
+
+				return isInView;
 			}
-		});
-
-		async function isElementInViewport(insElem) {
-			// Special bonus for those using jQuery
-			if (typeof jQuery === "function" && insElem instanceof jQuery) {
-				insElem = insElem[0];
-			}
-
-			var rect = await insElem.getBoundingClientRect();
-			const adHeight =
-				window.innerHeight || document.documentElement.clientHeight;
-			/* or $(window).height() */
-
-			const adWidth =
-				window.innerWidth || document.documentElement.clientWidth;
-			/* or $(window).width() */
-
-			const isInView =
-				rect.top >= 0 &&
-				rect.left >= 0 &&
-				rect.bottom <= adHeight &&
-				rect.right <= adWidth;
-
-			return isInView;
 		}
+		return "adsDisplayed";
 	}
 };
 
 generateBannerAdsDisplay = (adIndex, adData, adStyle) => {
 	// A
 	const AElem = document.createElement("a");
-	AElem.style = `display: inline-block !important; ${adStyle}`;
+	if (adData.banner_format === "STICKY") {
+		AElem.style = `display: inline-block !important; ${adStyle};width: ${window.innerWidth}px`;
+	} else {
+		AElem.style = `display: inline-block !important; ${adStyle}`;
+	}
 	AElem.id = `tagA${adIndex}`;
 	AElem.setAttribute("href", adData.href);
 	AElem.target = "_blank";
@@ -265,7 +343,7 @@ generateBannerAdsDisplay = (adIndex, adData, adStyle) => {
 	//image
 	const DivAdElem = document.createElement("div");
 	DivAdElem.id = `tagDivAd${adIndex}`;
-	DivAdElem.style = `display: inline-block !important;position: relative !important;${adStyle}`;
+	DivAdElem.style = `display: inline-block !important;position: relative !important;${adStyle};`;
 	document.getElementById(`tagA${adIndex}`).appendChild(DivAdElem);
 	const ImgElem = document.createElement("img");
 	ImgElem.style = adStyle;
@@ -303,7 +381,7 @@ checkTimeOnScreen = (impressionCreative, insElem) => {
 };
 
 RenderSticky = (divElem, adStyle, adIndex) => {
-	divElem.style = `display: block !important;bottom: 0px !important;margin: 0 !important;clear: none !important;float: none !important;padding: 0px !important;position: fixed !important;visibility: visible !important;z-index: 999999999 !important;text-align: center !important;${adStyle}`;
+	divElem.style = `display: block !important;bottom: 0px !important;margin: 0 !important;clear: none !important;float: none !important;padding: 0px !important;position: fixed !important;visibility: visible !important;z-index: 2147483647 !important;text-align: center !important;${adStyle}`;
 	document.getElementById(`tagIns${adIndex}`).appendChild(divElem);
 };
 
@@ -327,7 +405,7 @@ RenderHeader = (divElem, adIndex) => {
 RenderSlide = (sticky_ad, insElem, divElem, adIndex) => {
 	const parentNode = insElem.parentNode;
 	parentNode.style.position = "relative";
-	divElem.style = `display: inline-block !important;margin: 0 !important;clear: none !important;position: fixed !important;bottom: ${sticky_ad.height}px !important;right:1px !important;padding: 0px !important;z-index: 999999999 !important`;
+	divElem.style = `display: inline-block !important;margin: 0 !important;clear: none !important;position: fixed !important;bottom: ${sticky_ad.height}px !important;right:1px !important;padding: 0px !important;z-index: 2147483647 !important`;
 	document.getElementById(`tagIns${adIndex}`).appendChild(divElem);
 };
 
@@ -589,7 +667,7 @@ RenderNativeHorizontal = ({ insElem, nativeIndex, adData, placedIds }) => {
 	}
 	// ad data
 	const adDataDiv = document.createElement("div");
-	adDataDiv.style = `	max-width: ${maxWidthText}px !important;
+	adDataDiv.style = `	width: ${maxWidthText}px !important;
 	height: 100% !important;	
 	float: right !important;
 	text-align: center !important;
@@ -695,8 +773,8 @@ RenderNativeHorizontal = ({ insElem, nativeIndex, adData, placedIds }) => {
 
 if (typeof window.AFAdsScript === "undefined") {
 	window.AFAdsScript = true;
-	// window.addEventListener("DOMContentLoaded", function () {
-	//   generateAds();
-	// });
+	console.log(1);
+	// window.addEventListener("DOMContentLoaded", async function () {
 	generateAds();
+	// });
 }
