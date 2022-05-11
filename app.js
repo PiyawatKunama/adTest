@@ -40,3 +40,8 @@ app.get("/jimmy", (req, res) => {
 	console.log("req.headers", req.headers);
 	res.send("jimmy");
 });
+
+app.get("/cat/:adType", (req, res) => {
+	const adType = req.params.adType;
+	res.sendFile(`/image/${adType}.jpeg`, { root: __dirname });
+});
