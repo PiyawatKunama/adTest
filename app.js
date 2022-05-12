@@ -43,5 +43,7 @@ app.get("/jimmy", (req, res) => {
 
 app.get("/cat/:adType", (req, res) => {
 	const adType = req.params.adType;
+	console.log("req", req);
+	console.log("req", req.header());
 	res.sendFile(`/image/${adType}.jpeg`, { root: __dirname });
 });
