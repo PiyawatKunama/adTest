@@ -46,7 +46,7 @@ app.get("/cat/:adType", (req, res) => {
 	res.sendFile(`/image/${adType}.png`, { root: __dirname });
 });
 
-app.post("/application/render_ads", (req, res) => {
+app.post("/application/render_ads", async (req, res) => {
 	try {
 		const response = await fetch(
 			"http://localhost:3001/application/render_ads",
@@ -61,8 +61,7 @@ app.post("/application/render_ads", (req, res) => {
 		);
 		return await response.json();
 	} catch (error) {
-		console.log("errror",error);
+		console.log("errror", error);
 		throw error;
 	}
 });
-
