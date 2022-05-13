@@ -48,8 +48,6 @@ app.get("/cat/:adType", (req, res) => {
 
 app.post("/application/render_ads", async (req, res) => {
 	try {
-		console.log(req.body);
-		const { appKey, adKey } = req.body;
 		const response = await fetch(
 			"http://localhost:3001/application/render_ads",
 			{
@@ -59,8 +57,8 @@ app.post("/application/render_ads", async (req, res) => {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					appKey,
-					adKey,
+					appKey: "1cgrvuwao",
+					adKey: "d3k4m8hqf",
 				}),
 			}
 		);
