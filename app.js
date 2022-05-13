@@ -45,27 +45,3 @@ app.get("/cat/:adType", (req, res) => {
 	console.log("req", req.header);
 	res.sendFile(`/image/${adType}.png`, { root: __dirname });
 });
-
-app.post("/application/render_ads", async (req, res) => {
-	try {
-		const response = await fetch(
-			"http://localhost:3001/application/render_ads",
-			{
-				method: "POST",
-				headers: {
-					Accept: "application/json",
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					appKey: "1cgrvuwao",
-					adKey: "d3k4m8hqf",
-				}),
-			}
-		);
-		console.log(response);
-		return await response.json();
-	} catch (error) {
-		console.log("errror", error);
-		throw error;
-	}
-});
