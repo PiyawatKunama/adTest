@@ -43,5 +43,37 @@ app.get("/jimmy", (req, res) => {
 app.get("/cat/:adType", (req, res) => {
 	const adType = req.params.adType;
 	console.log("req", req.header);
-	res.sendFile(`/image/${adType}.jpeg`, { root: __dirname });
+	res.sendFile(`/image/${adType}.png`, { root: __dirname });
 });
+
+app.get("/application/render_ads", (req, res) => {
+	try {
+		const response = await fetch(
+			"http://localhost:3001/application/render_ads",
+			// "https://api-afbrother.skuberg.pro/creatives/render_ads",
+			{
+				method: "POST",
+				headers: {
+					Accept: "application/json",
+					"Content-Type": "application/json",
+				},
+				body: req.body,
+			}
+		);
+	
+		const result = await response.json();
+		// setTimeout(async () => {
+		// 	const adClosed = getAdClosed();
+		// 	if (!adClosed.includes(adKey)) {
+		// 		await impressionAd(json[0].key, adKey, appKey);
+		// 	}
+		// }, 5100);
+	
+		return result;
+	} catch (error) {
+		console.log("errror",error);
+		throw error;
+	}
+});
+
+
