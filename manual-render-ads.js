@@ -1,5 +1,3 @@
-console.log(0);
-
 var renderAdsUrl = "http://localhost:3001/creatives/render_ads";
 var impressAdUrl = "http://localhost:3001/creatives/impression_ad";
 var closeImageUrl = "http://localhost:3001/api/serverImage/close.png";
@@ -668,7 +666,7 @@ RenderNativeHorizontal = ({ insElem, nativeIndex, adData, placedIds }) => {
 	// ad data
 	const adDataDiv = document.createElement("div");
 	adDataDiv.style = `	width: ${maxWidthText}px !important;
-	height: 100% !important;	
+	height: 100% !important;
 	float: right !important;
 	text-align: center !important;
 	position: relative !important;`;
