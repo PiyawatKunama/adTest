@@ -177,7 +177,6 @@ generateAds = async () => {
 							break;
 					}
 
-					// main div
 					const divElem = document.createElement("div");
 					divElem.id = `tagDiv${adIndex}`;
 					divElem.style = "display: inline-block !important";
