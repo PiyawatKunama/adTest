@@ -243,7 +243,6 @@ generateAds = async () => {
 				await impressionCreative(data, insElem);
 			} else {
 				impressionData.push({ data, insElem });
-				console.log(impressionData);
 				setTimeout(async function () {
 					const newAdData = impressionData[impressionIndex].data;
 					const newAdElem = impressionData[impressionIndex].insElem;
@@ -253,7 +252,6 @@ generateAds = async () => {
 			}
 
 			async function impressionCreative(body, insElem) {
-				console.log({ body, insElem });
 				if (body) {
 					await fetch(impressAdUrl, {
 						...requestOptions,
