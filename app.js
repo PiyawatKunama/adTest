@@ -7,6 +7,10 @@ app.get("/", (req, res) => {
 	res.sendFile("/index.html", { root: __dirname });
 });
 
+// app.get("/", (req, res) => {
+// 	res.sendFile("/index-local.html", { root: __dirname });
+// });
+
 app.get("/server", (req, res) => {
 	res.sendFile("/server.html", { root: __dirname });
 });

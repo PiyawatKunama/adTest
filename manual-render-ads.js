@@ -6,6 +6,8 @@ var adsInView = {};
 var adsData = {};
 var impressionCount = 0;
 var adDelayTime = 200;
+var impressionData = [];
+var impressionIndex = 0;
 
 function getViewPortSize() {
 	var viewportwidth;
@@ -240,12 +242,18 @@ generateAds = async () => {
 			} else if (adData.ad_format === "POP") {
 				await impressionCreative(data, insElem);
 			} else {
+				impressionData.push({ data, insElem });
+				console.log(impressionData);
 				setTimeout(async function () {
-					await impressionCreative(data, insElem);
-				}, 5000);
+					const newAdData = impressionData[impressionIndex].data;
+					const newAdElem = impressionData[impressionIndex].insElem;
+					impressionIndex++;
+					await impressionCreative(newAdData, newAdElem);
+				}, 5100);
 			}
 
 			async function impressionCreative(body, insElem) {
+				console.log({ body, insElem });
 				if (body) {
 					await fetch(impressAdUrl, {
 						...requestOptions,
