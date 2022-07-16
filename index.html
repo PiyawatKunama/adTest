@@ -6,24 +6,43 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Document</title>
 	</head>
-	<body>
-		<div style="text-align: center">
-			<div>
-				<p>lottery</p>
+	<body
+		style="
+			position: absolute;
+			top: 50%;
+			margin-top: -350px;
+			/* Half of #content height */
+			width: 100%;
+			text-align: center;
+			font-size: 20px;
+		"
+	>
+		<div
+			style="
+				max-width: 200px;
+				height: 500px;
+				box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 
-				<textarea
-					form="usrform"
-					name="name"
-					id="textareaID"
-					style="height: 200px"
-				></textarea
-				><br /><br />
+				margin-left: auto;
+				margin-right: auto;
+				padding: 10px;
+			"
+		>
+			<p>lottery</p>
 
-				<input type="button" onclick="onSubmit()" value="Submit form" />
+			<textarea
+				form="usrform"
+				name="name"
+				id="textareaID"
+				style="height: 200px"
+			></textarea
+			><br /><br />
 
-				<div id="sum">sum = 0</div>
-				<div id="20per">20% = 0</div>
-			</div>
+			<input type="button" onclick="onSubmit()" value="Submit form" />
+			<br />
+			<br>
+			<div id="sum">sum = 0</div>
+			<div id="20per">20% = 0</div>
 		</div>
 
 		<script>
