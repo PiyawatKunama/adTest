@@ -7,6 +7,10 @@ app.get("/", (req, res) => {
 	res.sendFile("/index.html", { root: __dirname });
 });
 
+app.get("/index.css", (req, res) => {
+	res.sendFile("/index.css", { root: __dirname });
+});
+
 // app.get("/", (req, res) => {
 // 	res.sendFile("/index-local.html", { root: __dirname });
 // });
@@ -48,4 +52,8 @@ app.get("/cat/:adType", (req, res) => {
 	const adType = req.params.adType;
 	console.log("req", req.header);
 	res.sendFile(`/image/${adType}.png`, { root: __dirname });
+});
+
+app.get("/copy.png", (req, res) => {
+	res.sendFile("/copy.png", { root: __dirname });
 });

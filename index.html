@@ -4,48 +4,98 @@
 		<meta charset="UTF-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" href="index.css" type="text/css" />
+
 		<title>Document</title>
 	</head>
-	<body
-		style="
-			position: absolute;
-			top: 50%;
-			margin-top: -350px;
-			/* Half of #content height */
-			width: 100%;
-			text-align: center;
-			font-size: 20px;
-		"
-	>
-		<div
-			style="
-				max-width: 200px;
-				height: 500px;
-				box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+	<body>
+		<div class="card">
+			<h2>Padie Lottery</h2>
 
-				margin-left: auto;
-				margin-right: auto;
-				padding: 10px;
-			"
-		>
-			<p>lottery</p>
+			<textarea id="textareaID" placeholder="calculate area"></textarea>
 
-			<textarea
-				form="usrform"
-				name="name"
-				id="textareaID"
-				style="height: 200px"
-			></textarea
-			><br /><br />
+			<input
+				type="button"
+				class="button mt-20"
+				onclick="onSubmit()"
+				value="คำนวน"
+			/>
 
-			<input type="button" onclick="onSubmit()" value="Submit form" />
+			<div id="sum" class="mt-20">
+				รวม = 0
+				<input
+					class="button"
+					type="image"
+					onclick="copySum()"
+					value="copy"
+					src="copy.png"
+					style="max-width: 50px; max-height: 50px; margin-left: 20px"
+				/>
+			</div>
+
+			<div id="20per">
+				20% = 0
+				<input
+					class="button"
+					type="image"
+					onclick="copy20Per()"
+					value="copy"
+					src="copy.png"
+					style="max-width: 50px; max-height: 50px; margin-left: 20px"
+				/>
+			</div>
+			ลูกค้า : <input id="user_name" type="text" class="mt-20" />
 			<br />
-			<br>
-			<div id="sum">sum = 0</div>
-			<div id="20per">20% = 0</div>
+			<input
+				type="button"
+				class="button mt-20 w-90-per"
+				onclick="onSummary()"
+				value="ผลสรุป"
+			/>
 		</div>
 
 		<script>
+			const onSummary = () => {
+				const sum = document
+					.getElementById("sum")
+					.firstChild.textContent.split(" ")
+					.join("");
+				const per = document
+					.getElementById("20per")
+					.firstChild.textContent.split(" ")
+					.join("");
+				const data = document.getElementById("textareaID").value;
+
+				let user_name = document.getElementById("user_name").value;
+
+				const date = new Date();
+				const yyyy = date.getFullYear();
+				const thaiY = +yyyy + 543;
+				const yy = thaiY.toString().substring(2);
+				let mm = date.getMonth() + 1; // Months start at 0!
+				let dd = date.getDate();
+				if (dd < 10) dd = "0" + dd;
+				if (mm < 10) mm = "0" + mm;
+				const newSum = sum.replace("sum=", "");
+				const newPer = per.replace("20%=", "");
+				if (!user_name) {
+					user_name = "ลูกค้า";
+				}
+
+				navigator.clipboard.writeText(
+					`${data}\n\n${`${dd}/${mm}/${yy}`} ${user_name} ${newSum}-20%=${newPer}`
+				);
+			};
+			const copySum = () => {
+				const data =
+					document.getElementById("sum").firstChild.textContent;
+				navigator.clipboard.writeText(data.replace("sum =", ""));
+			};
+			const copy20Per = () => {
+				const data =
+					document.getElementById("20per").firstChild.textContent;
+				navigator.clipboard.writeText(data.replace("20% =", ""));
+			};
 			const onSubmit = () => {
 				const data = document.getElementById("textareaID").value;
 
@@ -55,7 +105,8 @@
 					const num = deleteN[i];
 
 					if (num.includes("=")) {
-						const eachNum = num.split("=").pop();
+						let eachNum = num.split("=").pop();
+						eachNum = eachNum.replace(",", "");
 						let end = 0;
 						if (eachNum.includes("*")) {
 							const splitEachNum = eachNum.split("*");
@@ -77,7 +128,10 @@
 				}
 
 				const sumInput = document.getElementById("sum");
-				sumInput.innerHTML = "sum = " + sum;
+				const sumDisplay = (+sum).toLocaleString();
+
+				sumInput.firstChild.textContent =
+					"sum = " + sumDisplay.toLocaleString();
 
 				const sumPercent = document.getElementById("20per");
 
@@ -88,41 +142,10 @@
 				)}00`;
 
 				const tax = +lastTwoZero * 0.2;
-
-				sumPercent.innerHTML = "20% = " + (sum - tax);
+				const sumPerDisplay = (sum - tax).toLocaleString();
+				sumPercent.firstChild.textContent = `20% = ${sumPerDisplay}`;
 			};
 		</script>
 	</body>
 </html>
-
-<!-- 16/7/65 พี่ฟ้าง 780-20%=640 -->
-
-<!-- บน
-472=20*20
-174=20*20
-521=20*20
-99=30
-67=30
-76=30
-98=30
-89=30
-14=30
-41=30
-42=30
-24=30
-21=30
-12=30
-
-ล่าง
-99=30
-67=30
-76=30
-98=30
-89=30
-14=30
-41=30
-42=30
-24=30
-21=30
-12=30 
--->
+<!-- HTML !-->
