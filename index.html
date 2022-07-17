@@ -10,48 +10,71 @@
 	</head>
 	<body>
 		<div class="card">
-			<h2>Padie Lottery</h2>
+			<div class="card2">
+				<h2>Padie Lottery</h2>
 
-			<textarea id="textareaID" placeholder="calculate area"></textarea>
-
-			<input
-				type="button"
-				class="button mt-20"
-				onclick="onSubmit()"
-				value="คำนวน"
-			/>
-
-			<div id="sum" class="mt-20">
-				รวม = 0
+				<textarea
+					id="textareaID"
+					placeholder="calculate area"
+					style="width: 80%; max-width: 80%; min-width: 80%"
+				></textarea>
+				<br />
 				<input
-					class="button"
-					type="image"
-					onclick="copySum()"
-					value="copy"
-					src="copy.png"
-					style="max-width: 50px; max-height: 50px; margin-left: 20px"
+					type="button"
+					class="button mt-20"
+					onclick="onSubmit()"
+					value="calculate"
+				/>
+
+				<div id="sum" class="mt-20">
+					sum = 0
+					<input
+						class="button"
+						type="image"
+						onclick="copySum()"
+						value="copy"
+						src="copy.png"
+						style="
+							max-width: 50px;
+							max-height: 50px;
+							margin-left: 20px;
+						"
+					/>
+				</div>
+
+				<div id="20per">
+					20% = 0
+					<input
+						class="button"
+						type="image"
+						onclick="copy20Per()"
+						value="copy"
+						src="copy.png"
+						style="
+							max-width: 50px;
+							max-height: 50px;
+							margin-left: 20px;
+						"
+					/>
+				</div>
+				Customer
+				<input
+					id="user_name"
+					type="text"
+					class="mt-20"
+					style="margin-left: 20px"
+				/>
+				<br />
+				<input
+					type="button"
+					class="button mt-20 w-90-per"
+					onclick="onSummary()"
+					value="Summary"
 				/>
 			</div>
-
-			<div id="20per">
-				20% = 0
-				<input
-					class="button"
-					type="image"
-					onclick="copy20Per()"
-					value="copy"
-					src="copy.png"
-					style="max-width: 50px; max-height: 50px; margin-left: 20px"
-				/>
+			<div class="card3">
+				<h2>history</h2>
 			</div>
-			ลูกค้า : <input id="user_name" type="text" class="mt-20" />
-			<br />
-			<input
-				type="button"
-				class="button mt-20 w-90-per"
-				onclick="onSummary()"
-				value="ผลสรุป"
-			/>
 		</div>
 
 		<script>
@@ -81,9 +104,36 @@
 				if (!user_name) {
 					user_name = "ลูกค้า";
 				}
-
+				const th_date = `${dd}/${mm}/${yy}`;
 				navigator.clipboard.writeText(
-					`${data}\n\n${`${dd}/${mm}/${yy}`} ${user_name} ${newSum}-20%=${newPer}`
+					`${data}\n\n${th_date} ${user_name} ${newSum}-20%=${newPer}`
+				);
+				let storageData = JSON.parse(
+					localStorage.getItem("lottery_data")
+				);
+
+				if (storageData) {
+					storageData.push({
+						data,
+						th_date,
+						user_name,
+						sum: newSum,
+						percent: newPer,
+					});
+				} else {
+					storageData = [
+						{
+							data,
+							th_date,
+							user_name,
+							sum: newSum,
+							percent: newPer,
+						},
+					];
+				}
+				localStorage.setItem(
+					"lottery_data",
+					JSON.stringify(storageData)
 				);
 			};
 			const copySum = () => {
